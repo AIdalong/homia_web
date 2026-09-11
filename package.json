@@ -1,0 +1,14 @@
+{
+  "name": "homia-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Homia 门牌壁纸生成器：静态页面 + 本地服务（配置落盘 / 生图代理）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "pm2": "pm2 start ecosystem.config.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

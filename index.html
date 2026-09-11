@@ -1,0 +1,1404 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Homia Studio · 门牌壁纸生成器</title>
+<style>
+:root{
+  --green:#2f7a55;--green-dark:#215c40;--green-soft:#eaf4ee;
+  --ink:#1d2a22;--muted:#74807a;--line:#e2e9e3;--bg:#f2f6f3;
+  --red:#b93c35;--yellow:#d5b023;--paper:#f4f0dc;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,"Microsoft Yahei",sans-serif}
+h1,h2,h3{margin:0}
+button{font:inherit;cursor:pointer}
+input,textarea,select{font:inherit;color:inherit}
+[hidden]{display:none!important}
+
+/* ---------- header ---------- */
+header{height:calc(var(--header-h) + var(--safe-top));background:#fff;border-bottom:1px solid var(--line);padding:var(--safe-top) 24px 0;display:flex;align-items:center;justify-content:space-between;position:fixed;inset:0 0 auto;z-index:5}
+.brand{display:flex;align-items:center;gap:9px}
+.brand .logo{background:var(--green);color:#fff;width:26px;height:26px;border-radius:6px;display:grid;place-items:center;font-weight:800;font-size:14px}
+.brand b{letter-spacing:3px;font-size:15px}
+.brand small{color:#9aa69f;letter-spacing:2px;font-size:11px}
+header .meta{color:var(--muted);font-size:12px}
+
+/* ---------- layout ---------- */
+.app{padding-top:58px;display:flex;min-height:100vh}
+aside{width:216px;flex:none;position:fixed;top:58px;bottom:0;background:#fff;border-right:1px solid var(--line);padding:22px 12px;display:flex;flex-direction:column;gap:2px}
+aside .group{font-size:10px;color:#a2aea7;letter-spacing:1.5px;margin:12px 10px 6px}
+aside .group:first-child{margin-top:0}
+.nav{display:block;padding:9px 11px;border-radius:7px;color:#5a665e;font-size:13.5px;cursor:pointer}
+.nav:hover{background:#f1f6f2}
+#tab-studio:checked ~ .app [for=tab-studio],
+#tab-sources:checked ~ .app [for=tab-sources],
+#tab-api:checked ~ .app [for=tab-api]{background:var(--green-soft);color:var(--green-dark);font-weight:700}
+aside .note{margin-top:auto;border-top:1px solid var(--line);padding:14px 10px 0;color:var(--muted);font-size:11px}
+aside .note small{color:#a2aea7}
+main{margin-left:216px;padding:36px 44px;flex:1;min-width:0;max-width:1500px}
+.tab{display:none}
+#tab-studio:checked ~ .app #studio,
+#tab-sources:checked ~ .app #sources,
+#tab-api:checked ~ .app #api{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ---------- common ---------- */
+.title{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:26px}
+.title small{color:var(--green);font-weight:800;letter-spacing:1.5px;font-size:11px}
+.title h1{font-size:27px;margin-top:7px}
+.title p{color:var(--muted);margin:7px 0 0;font-size:13px}
+.btn{padding:10px 15px;border:1px solid #cfdad2;border-radius:7px;background:#fff;color:#3d4a42;font-weight:600}
+.btn:hover{border-color:var(--green);color:var(--green-dark)}
+.btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.btn.primary:hover{background:var(--green-dark);color:#fff}
+.btn:disabled{opacity:.6;cursor:progress}
+.link{border:0;background:none;padding:0;color:var(--green);text-decoration:underline;font-size:12px;cursor:pointer}
+.card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:20px;box-shadow:0 2px 10px #17231708}
+.card h2{font-size:15.5px;margin-bottom:15px}
+.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;gap:10px}
+.head h2{margin:0}
+.head em{font-style:normal;font-size:11px;color:var(--muted);border:1px solid var(--line);padding:3px 8px;border-radius:20px}
+label.f{display:block;font-size:11px;font-weight:700;color:#5d6b62;margin:16px 0 7px}
+label.f:first-of-type{margin-top:0}
+textarea,input,select{width:100%;padding:9px 11px;border:1px solid #d6e0d9;border-radius:7px;background:#fff;outline:0}
+textarea:focus,input:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px #2f7a551a}
+textarea{min-height:118px;resize:vertical;line-height:1.7}
+.hint{color:#97a39c;font-size:11.5px;margin:8px 0 0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:11px 0 0}
+.chip{border:1px solid #d9e5dd;background:#f5faf6;color:#396b4d;padding:4px 11px;border-radius:20px;font-size:12px}
+.chip:hover{border-color:var(--green);background:var(--green-soft)}
+.modes,.two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.mode{display:block;text-align:left;border:1px solid #d6e0d9;border-radius:8px;padding:10px 13px;cursor:pointer}
+.mode:hover{border-color:#a9c3b3;background:#f7fbf8}
+.mode b{display:block;font-size:13px}
+.mode small{display:block;color:#8f9b94;font-size:11.5px;margin-top:2px}
+#mode-manual:checked ~ .modes .mode[for=mode-manual],
+#mode-auto:checked ~ .modes .mode[for=mode-auto]{border-color:var(--green);background:var(--green-soft);box-shadow:0 0 0 1px var(--green) inset}
+details{margin-top:22px;border-top:1px solid var(--line);padding-top:13px}
+summary{font-size:12px;color:var(--muted);cursor:pointer}
+pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Consolas,monospace;color:#4d5a4e;background:#f6faf7;border:1px solid var(--line);border-radius:7px;padding:11px;margin:10px 0 0}
+
+/* ---------- studio ---------- */
+.grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:17px;align-items:start}
+.preview .frame{background:#252925;border:7px solid #4c504a;border-radius:12px;padding:12px}
+#screen{display:block;width:100%;height:auto;background:var(--paper);border-radius:3px}
+.colors{text-align:center;margin:13px 0;color:#6b766f;font-size:11.5px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid #c3ccc5;margin:0 4px 0 10px}
+.sw.black{background:#20251f}.sw.red{background:var(--red)}.sw.yellow{background:var(--yellow)}.sw.white{background:var(--paper)}
+.actions{display:flex;gap:9px}
+.actions .btn{flex:1}
+#status{margin:12px 0 0;font-size:12px;color:var(--muted);min-height:18px}
+#status.err{color:var(--red)}
+#status.ok{color:var(--green-dark)}
+
+/* ---------- sources ---------- */
+.sources{display:flex;flex-direction:column;gap:18px;max-width:880px}
+.readonly{background:#f6f8f6;color:var(--muted);cursor:not-allowed}
+.evt-row{display:grid;grid-template-columns:180px 1fr auto;gap:8px;margin-bottom:9px;align-items:center}
+.evt-row input{min-height:auto}
+.event{display:grid;grid-template-columns:1.3fr .9fr;gap:8px;margin-bottom:9px}
+
+.blank{padding:80px 20px;text-align:center;border:1px dashed #cdd9d0;border-radius:11px;color:var(--muted)}
+.blank h2{font-size:16px;margin-bottom:6px;color:#5c685f}
+
+/* ---------- device / api ---------- */
+.device-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start}
+.device{display:grid;grid-template-columns:250px minmax(0,1fr);gap:36px;max-width:880px;align-items:start}
+.switch{display:flex;align-items:center;gap:8px;margin-top:16px}
+.switch input{width:auto;margin:0}
+.switch label{margin:0;font-size:12.5px;font-weight:600;color:#5d6b62;cursor:pointer}
+#save-state{color:var(--green-dark)}
+
+/* ---------- 工作台（卡片分区：预览 / 自动 / 手动） ---------- */
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px}
+.card-head h2{font-size:15.5px;margin:0}
+.card-desc{margin:6px 0 0;color:var(--muted);font-size:12.5px}
+.tag{font-style:normal;font-size:11px;color:var(--muted);border:1px solid var(--line);padding:3px 8px;border-radius:20px;white-space:nowrap}
+.card-head .btn{flex:none}
+#studio .card{margin-bottom:0}
+.workbench{display:flex;flex-direction:column;gap:16px}
+.wb-main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.wb-side{display:flex;flex-direction:column;gap:16px}
+.preview{text-align:left}
+.preview .frame{max-width:100%;margin:0}
+.preview-body{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:20px;align-items:start;max-width:1080px}
+.preview-side{display:flex;flex-direction:column;gap:10px}
+.side-actions{display:flex;flex-direction:column;gap:8px}
+.btn.block{width:100%}
+.context{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:4px 24px;border:1px solid var(--line);border-radius:8px;padding:14px 16px;background:#fafcfb}
+.ctx-row{display:flex;gap:10px;font-size:12.5px;line-height:1.9}
+.ctx-row span{color:var(--muted);flex:none;width:32px}
+.ctx-row b{font-weight:600;word-break:break-all}
+.status{margin:0;font-size:12px;color:var(--muted);min-height:18px}
+.status.err{color:var(--red)}
+.status.ok{color:var(--green-dark)}
+.mini{height:150px;border:7px solid #4c504a;background:var(--paper);border-radius:10px;display:grid;place-items:center;color:#3c443d;font-size:13px;letter-spacing:1px}
+.api{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:16px;align-items:start}
+.code{min-height:400px;background:#202520;color:#dbe7d9;border-color:#202520;font:12px/1.6 ui-monospace,Consolas,monospace}
+.api dl{display:grid;grid-template-columns:132px 1fr;gap:8px 12px;font-size:12px;margin:0}
+.api dt{font-family:ui-monospace,Consolas,monospace;color:var(--green-dark)}
+.api dd{margin:0;color:#6d776d}
+#save-tip{font-size:12px;color:var(--green-dark)}
+.log{max-height:340px;overflow:auto;background:#202520;border-radius:8px;padding:12px 14px;white-space:pre-wrap;word-break:break-all;font:12px/1.7 ui-monospace,Consolas,monospace;color:#cfd8d0}
+.log .lg{padding:1px 0}
+.log .t{color:#7f8c84;margin-right:6px}
+.log .info{color:#cfd8d0}
+.log .ok{color:#7fd39a}
+.log .warn{color:#e8c76a}
+.log .err{color:#f0908a}
+.log .dim{color:#7f8c84}
+
+#toast{position:fixed;bottom:calc(26px + var(--safe-bottom));left:50%;transform:translate(-50%,90px);padding:11px 18px;background:#20251f;color:#fff;border-radius:8px;font-size:12.5px;opacity:0;transition:.25s;pointer-events:none;z-index:9;max-width:calc(100vw - 32px);text-align:center}
+#toast.show{transform:translate(-50%,0);opacity:1}
+
+@media(max-width:980px){
+  /* 标签栏吸顶，横向可滚动，切页不必回到顶部 */
+  aside{position:sticky;top:calc(var(--header-h) + var(--safe-top));z-index:4;width:auto;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:10px 12px;gap:6px}
+  aside .group,aside .note{display:none}
+  .nav{white-space:nowrap;padding:9px 14px;border:1px solid var(--line)}
+  .app{flex-direction:column}
+  main{margin-left:0;padding:24px 16px}
+  .grid,.api,.device,.preview-body,.workbench{grid-template-columns:1fr}
+  .wb-side{position:static}
+  .device{gap:20px}
+  .title{flex-direction:column;align-items:flex-start}
+  /* 表单控件 ≥16px，避免 iOS 聚焦时自动放大页面且不缩回 */
+  input,textarea,select{font-size:16px}
+  /* 触摸目标不小于 44px */
+  .btn{min-height:44px}
+  .chip{padding:8px 14px}
+  .btn.sm{min-height:36px}
+  /* 日程行在窄屏折成两行，避免 180px 日期框挤出横向滚动 */
+  .evt-row{grid-template-columns:1fr auto;gap:6px}
+  .evt-row .evt-date{grid-column:1 / -1}
+  .evt-row .evt-desc{grid-column:1}
+}
+@media(max-width:560px){
+  header{padding:var(--safe-top) 14px 0}
+  header .meta{display:none}
+  main{padding:18px 12px}
+  .modes,.two{grid-template-columns:1fr}
+  .title h1{font-size:22px}
+  .card{padding:15px}
+  /* 边框/内边距收窄，把宽度尽可能留给画布 */
+  .preview .frame{border-width:4px;padding:8px}
+  .card-head{flex-wrap:wrap;gap:12px}
+  .card-head .btn{width:100%}
+  .actions{flex-wrap:wrap}
+  .api dl{grid-template-columns:1fr;gap:2px 0}
+  .api dd{margin:0 0 8px}
+  .code{min-height:240px}
+}
+.btn.sm{padding:5px 10px;font-size:12px}
+/* 弹窗 */
+.modal{position:fixed;inset:0;background:rgba(20,28,22,.45);display:none;align-items:center;justify-content:center;z-index:20}
+.modal.show{display:flex}
+.modal-box{background:#fff;border-radius:14px;padding:22px;width:min(360px,92vw);box-shadow:0 20px 50px rgba(0,0,0,.2)}
+.modal-box h3{margin:0 0 14px}
+.modal-box .f{display:block;margin:12px 0 5px;font-size:12.5px;color:var(--muted)}
+.modal-box input,.modal-box select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="logo">H</span><b>HOMIA</b><small>STUDIO</small></div>
+  <div class="meta"><span id="save-state"></span>门牌墨水屏 · <span id="dim">800 × 480</span> · 黑 / 红 / 黄 / 白 四色</div>
+</header>
+
+<input type="radio" name="tab" id="tab-studio" checked hidden>
+<input type="radio" name="tab" id="tab-sources" hidden>
+<input type="radio" name="tab" id="tab-api" hidden>
+
+<div class="app">
+  <aside>
+    <p class="group">WORKSPACE</p>
+    <label class="nav" for="tab-studio">生成工作台</label>
+    <label class="nav" for="tab-sources">输入信息</label>
+    <div class="note">本地配置<br><small>仅保存在此浏览器</small></div>
+  </aside>
+
+  <main>
+    <!-- ============ 工作台 ============ -->
+    <section class="tab" id="studio">
+      <div class="title">
+        <div>
+          <small>WALLPAPER GENERATOR</small>
+          <h1>生成工作台</h1>
+          <p>为门牌生成一张四色墨水屏图片，输出即可直接下发到设备。</p>
+        </div>
+      </div>
+
+      <div class="workbench">
+        <div class="wb-main">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h2>自动表达</h2>
+                <p class="card-desc">结合节日、日程、环境与主人偏好自动组织画面，无需手写描述。</p>
+              </div>
+              <button class="btn primary" id="generate-auto" type="button">自动生成</button>
+            </div>
+            <div class="context" id="context-list"></div>
+            <details>
+              <summary>查看完整 Prompt</summary>
+              <pre id="compiled-auto"></pre>
+            </details>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h2>手动创作</h2>
+                <p class="card-desc">只按你写的描述生成，不附加节日、日程与环境信息。</p>
+              </div>
+              <button class="btn primary" id="generate-manual" type="button">按描述生成</button>
+            </div>
+            <label class="f" for="prompt">画面描述</label>
+            <textarea id="prompt" data-save="prompt" placeholder="描述希望门牌表达的内容，例如：傍晚的花园，金色银杏叶落在门前，小狗安静等待回家的人。"></textarea>
+            <div class="chips" id="chips"></div>
+            <p class="hint">点击标签可插入到描述中</p>
+            <details>
+              <summary>查看完整 Prompt</summary>
+              <pre id="compiled-manual"></pre>
+            </details>
+          </article>
+
+        </div>
+
+        <div class="wb-side">
+          <article class="card preview">
+            <div class="card-head">
+              <div>
+                <h2>设备预览</h2>
+                <p class="card-desc">7.5 英寸四色墨水屏 · <span id="dim2">800 × 480</span></p>
+              </div>
+              <em class="tag" id="preview-tag">本地插画 · 四色</em>
+            </div>
+            <div class="preview-body">
+              <div class="frame"><canvas id="screen" width="800" height="480"></canvas></div>
+              <div class="preview-side">
+                <div class="colors">
+                  <i class="sw black"></i>黑<i class="sw red"></i>红<i class="sw yellow"></i>黄<i class="sw white"></i>白
+                </div>
+                <p class="hint">已按 Floyd–Steinberg 抖动映射到四色，与真机显示一致。</p>
+                <div class="side-actions">
+                  <button class="btn primary block" id="download">下载 PNG</button>
+                </div>
+                <p id="status" class="status"></p>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <article class="card">
+          <details>
+            <summary>接口日志（排错用）</summary>
+            <div id="log" class="log"></div>
+            <button class="link" id="clear-log" type="button">清空日志</button>
+          </details>
+        </article>
+      </div>
+
+      <input type="radio" name="mode" id="mode-manual" value="manual" checked hidden>
+      <input type="radio" name="mode" id="mode-auto" value="auto" hidden>
+    </section>
+
+    <!-- ============ 输入信息 ============ -->
+    <section class="tab" id="sources">
+      <div class="title">
+        <div>
+          <small>INPUT SOURCES</small>
+          <h1>维护生成输入信息</h1>
+          <p>自动表达模式会使用这里的全部信息。标注「不可编辑」的分区由系统自动维护；下方可编辑分区（含门牌）只在点击保存后写入<b>本浏览器</b>，不会上传服务端。</p>
+        </div>
+      </div>
+
+      <div class="sources">
+        <!-- 1. 环境信息（不可编辑） -->
+        <article class="card">
+          <div class="head">
+            <h2>1 · 环境信息</h2>
+            <em>不可编辑</em>
+          </div>
+          <p class="hint" id="locstatus" style="margin:0 0 12px">由实时天气自动维护：默认按出口 IP 自动定位城市，也可在下方点击按钮按指定城市刷新。</p>
+          <label class="f" for="location">位置</label>
+          <input id="location" class="readonly" data-save="location" value="" placeholder="（点击「刷新实时天气」自动获取）" readonly>
+          <div class="two">
+            <div><label class="f" for="weather">天气</label><input id="weather" class="readonly" data-save="weather" value="晴朗" readonly></div>
+            <div><label class="f" for="temperature">温度</label><input id="temperature" class="readonly" data-save="temperature" value="23°C" readonly></div>
+          </div>
+          <div class="two">
+            <div><label class="f" for="season">季节</label><input id="season" class="readonly" data-save="season" value="初秋" readonly></div>
+            <div><label class="f" for="period">时段</label>
+              <select id="period" class="readonly" data-save="period" disabled>
+                <option>傍晚</option><option>早晨</option><option>午后</option><option>夜晚</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions" style="margin-top:14px">
+            <button class="btn" id="locate" type="button">刷新实时天气</button>
+          </div>
+        </article>
+
+        <!-- 2. 公共节日（不可编辑） -->
+        <article class="card">
+          <div class="head">
+            <h2>2 · 公共节日</h2>
+            <em>不可编辑</em>
+          </div>
+          <label class="f" for="holiday">下一个节日 / 节气</label>
+          <input id="holiday" class="readonly" data-save="holiday" value="秋分" readonly>
+          <label class="f" for="holiday-date">日期</label>
+          <input id="holiday-date" class="readonly" type="date" data-save="holidayDate" value="2026-09-23" readonly>
+          <label class="f" for="holiday-note">补充说明</label>
+          <input id="holiday-note" class="readonly" data-save="holidayNote" value="昼夜均分，适合安静的秋日意象。" readonly>
+        </article>
+
+        <!-- 3. 门牌号（需要编辑） -->
+        <article class="card">
+          <div class="head">
+            <h2>3 · 门牌号</h2>
+            <em>可编辑</em>
+          </div>
+          <p class="hint" style="margin:0 0 12px">门牌标题与门牌号会叠加在生成图的底部，同时写入模型 Prompt。</p>
+          <label class="f" for="door-title">门牌标题 / 家庭名</label>
+          <input id="door-title" data-save="doorTitle" value="SMITH FAMILY" placeholder="例如：SMITH FAMILY">
+          <label class="f" for="door-number">门牌号</label>
+          <input id="door-number" data-save="doorNumber" value="A-1802" placeholder="例如：A-1802 / 18 号">
+          <div class="switch">
+            <input type="checkbox" id="door-show" data-save="doorShow" checked>
+            <label for="door-show">在生成的图片上叠加门牌文字</label>
+          </div>
+          <p class="hint">关闭后只输出纯画面，门牌文字由设备端自行渲染。</p>
+        </article>
+
+        <!-- 4. 日程 / 纪念日（可增删改，不限条目） -->
+        <article class="card">
+          <div class="head">
+            <h2>4 · 日程 / 纪念日</h2>
+            <em>可编辑 · 不限条目</em>
+          </div>
+          <p class="hint" style="margin:0 0 12px">按「日期 + 事件描述」管理，可任意添加、修改或删除；空条目不会保存。</p>
+          <div id="event-list"></div>
+          <button class="btn" id="event-add" type="button">+ 添加日程 / 纪念日</button>
+        </article>
+
+        <!-- 5. 其他偏好（可编辑） -->
+        <article class="card">
+          <div class="head">
+            <h2>5 · 其他偏好</h2>
+            <em>可编辑</em>
+          </div>
+          <label class="f" for="style">偏好风格（逗号分隔）</label>
+          <input id="style" data-save="style" value="极简, 温暖, 自然, 水墨">
+          <label class="f" for="elements">常用元素</label>
+          <input id="elements" data-save="elements" value="花园, 小狗, 家, 家人">
+          <label class="f" for="mood">情绪氛围</label>
+          <input id="mood" data-save="mood" value="平静, 温暖">
+          <label class="f" for="avoid">避免出现</label>
+          <input id="avoid" data-save="avoid" value="照片写实, 蓝紫渐变, 大面积纯白空场, 密集文字, 悬浮漂浮的无关物体">
+        </article>
+
+        <button class="btn primary block" id="save-input" type="button" style="max-width:880px">保存输入信息</button>
+      </div>
+    </section>
+
+    <!-- ============ API ============ -->
+    <section class="tab" id="api" hidden>
+      <div class="title">
+        <div>
+          <small>IMAGE MODEL CONNECTION</small>
+          <h1>配置生图 API</h1>
+          <p>最终 Prompt 会注入请求体中的 <code>{{prompt}}</code> 占位符。</p>
+        </div>
+      </div>
+      <div class="api">
+        <article class="card">
+          <div class="head"><h2>连接配置 JSON</h2><span id="save-tip"></span></div>
+          <textarea id="config" class="code" spellcheck="false"></textarea>
+          <div class="actions" style="margin-top:12px">
+            <button class="btn primary" id="save-api">保存配置</button>
+            <button class="btn" id="test-api">测试连接</button>
+          </div>
+        </article>
+        <article class="card">
+          <h2>配置说明</h2>
+          <p class="hint" style="margin:0 0 14px">未配置或使用示例值时，工作台会用内置插画引擎离线出图，功能不受影响。</p>
+          <dl>
+            <dt>endpoint</dt><dd>请求地址</dd>
+            <dt>method</dt><dd>HTTP 方法</dd>
+            <dt>headers</dt><dd>请求头</dd>
+            <dt>body</dt><dd>JSON 请求体模板</dd>
+            <dt>responseImagePath</dt><dd>返回图片 URL 的路径</dd>
+            <dt>{{size}}</dt><dd>自动替换为「模型出图尺寸」，如 3200x1920</dd>
+            <dt>{{width}} {{height}}</dt><dd>分别替换为宽 / 高数值</dd>
+            <dt>useProxy</dt><dd>false = 浏览器直连（默认走本地代理）</dd>
+          </dl>
+          <h3 style="font-size:13px;margin:18px 0 0">实际请求预览</h3>
+          <pre id="request"></pre>
+        </article>
+      </div>
+
+      <p class="hint" style="margin-top:12px">本页已从导航隐藏（站点将部署到公网，接口凭据统一由服务端的 <code>data/api.json</code> 管理）。需要改接口时直接编辑该文件并重启服务即可。</p>
+    </section>
+  </main>
+</div>
+
+<div id="toast"></div>
+<script>
+(function () {
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.prototype.slice.call(document.querySelectorAll(s));
+  const PAL = { black: [32, 37, 31], red: [185, 60, 53], yellow: [213, 176, 35], white: [244, 240, 220] };
+  const C = k => 'rgb(' + PAL[k].join(',') + ')';
+  const KEY = { form: 'homia.form', api: 'homia.api' };
+  const PLACEHOLDER = /your-api\.example\.com|YOUR_API_KEY/;
+
+  const canvas = $('#screen');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const proxied = location.protocol === 'http:' || location.protocol === 'https:';
+
+  const SAMPLE = {
+    endpoint: 'https://your-api.example.com/v1/images/generations',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer YOUR_API_KEY' },
+    body: { model: 'your-image-model', prompt: '{{prompt}}', size: '{{size}}' },
+    responseImagePath: 'data.0.url'
+  };
+
+  /* ---------------- 本地存储 ---------------- */
+  function load(k, fallback) {
+    try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fallback : v; } catch (e) { return fallback; }
+  }
+  function save(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; }
+  }
+  // 显示规格（分辨率 / 出图倍率）由服务端 data/device.json 维护；门牌信息只存本地浏览器
+  let DEV = { width: 800, height: 480, renderSize: '4' };
+  let eventsData = [];
+  function readForm() {
+    const data = {};
+    $$('[data-save]').forEach(el => { data[el.dataset.save] = el.type === 'checkbox' ? el.checked : el.value; });
+    // 仅保存含「日期或描述」的日程，过滤掉空白占位行
+    data.events = eventsData.filter(e => (e.desc || '').trim() || (e.date || '').trim());
+    return data;
+  }
+  function applyForm(data) {
+    $$('[data-save]').forEach(el => {
+      const v = data[el.dataset.save];
+      if (v == null) return;
+      if (el.type === 'checkbox') el.checked = !!v; else el.value = v;
+    });
+    // 兼容历史数据：旧格式为 {name, date}，新格式为 {date, desc}
+    eventsData = Array.isArray(data.events)
+      ? data.events.map(e => ({ date: e.date || '', desc: (e.desc != null ? e.desc : e.name) || '' }))
+      : [];
+  }
+  function flagSaved(text, bad) {
+    const el = $('#save-state');
+    el.textContent = text ? text + ' · ' : '';
+    el.style.color = bad ? 'var(--red)' : '';
+  }
+  // 输入信息（sources）与门牌信息只保存在用户浏览器本地，不回写服务端
+  function persist() {
+    save(KEY.form, readForm());
+    flagSaved('已保存到本地浏览器');
+  }
+
+  /* ---------------- 表单状态与 Prompt ---------------- */
+  function state() {
+    const v = id => { const el = $('#' + id); return el ? el.value : ''; };
+    return {
+      prompt: v('prompt').trim(),
+      mode: $('input[name=mode]:checked').value,
+      holiday: v('holiday'), date: v('holiday-date'), note: v('holiday-note'),
+      events: eventsData.filter(e => (e.desc || '').trim() || (e.date || '').trim()),
+      location: v('location'), weather: v('weather'), temp: v('temperature'),
+      season: v('season'), period: v('period'),
+      style: v('style'), elements: v('elements'), mood: v('mood'), avoid: v('avoid'),
+      doorTitle: v('door-title'), doorNumber: v('door-number'),
+      doorShow: ($('#door-show') || {}).checked === true,
+      renderSize: DEV.renderSize || '1',
+      w: Math.min(1600, Math.max(120, parseInt(DEV.width, 10) || 800)),
+      h: Math.min(1600, Math.max(120, parseInt(DEV.height, 10) || 480))
+    };
+  }
+  function ratio(w, h) {
+    const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+    const d = gcd(w, h) || 1;
+    return (w / d) + ':' + (h / d);
+  }
+  // 选题：自动模式按「日程 > 节日 > 季节/时段」优先级挑出最具体的一个话题，保证画面有明确主题
+  function pickTheme(s) {
+    const ev = s.events.map(evDesc).filter(Boolean)[0];
+    if (ev) return '今天家里有「' + ev + '」';
+    if (s.holiday) return '临近节日「' + s.holiday + '」' + (s.note ? '（' + s.note + '）' : '');
+    const bits = [s.period, s.season, s.weather].filter(Boolean).join('、');
+    return bits ? '此刻是' + bits : '';
+  }
+  function buildPrompt(mode) {
+    const s = state();
+    const m = mode || s.mode;
+    const main = (s.prompt || '').replace(/[。.!！]\s*$/, '').trim();
+    const mult = /^[1-9]$/.test(s.renderSize) ? parseInt(s.renderSize, 10) : 1;
+    const theme = (m === 'auto' ? (pickTheme(s) || main) : main) || '日常的家庭温情';
+    const out = [];
+    // 1) 任务 + 明确选题
+    out.push('为 Homia 家庭门牌创作一幅横向插画（7.5 英寸四色墨水屏壁纸）。'
+      + '画面选题：' + theme + '。整幅画必须围绕这个选题讲一个一眼能看懂的故事，有一个明确、具象的主体。');
+    if (m === 'auto') {
+      out.push('可用线索——节日：' + (s.holiday || '无') + (s.date ? '（' + s.date + '）' : '')
+        + (s.note ? '，' + s.note : '') + '；日程：' + (s.events.map(evDesc).join('、') || '无')
+        + '；环境：' + [s.location, s.season, s.weather, s.temp, s.period].filter(Boolean).join('，')
+        + '。挑其中与选题最贴合的线索去具体化场景，不要把信息逐条罗列进画面。');
+      if (main) out.push('在选题基础上突出这个主体：' + main + '。');
+    }
+    // 2) 内容丰富度：明确要求"画满"，抵消过去"低细节"造成的空洞
+    out.push('画面要饱满、有生活气息，不要空旷：至少安排 6～8 个可辨识的元素，'
+      + '按近景、中景、远景分三层——近景放大主体细节，中景铺陈主要场景与人物/动物活动，'
+      + '远景交代天空、远山或房屋轮廓。'
+      + '每个元素都要有合理的位置和来源，落地或依附在场景中（长在地里、摆在桌上、挂在墙上、种在花盆里），'
+      + '彼此呼应，不要出现悬浮半空、飞来飞去的无关物体。'
+      + '主体清晰、四周有内容支撑，避免大面积空白背景。');
+    // 3) 构图与焦点
+    out.push('构图：视觉焦点明确并落在画面中部偏黄金分割处，主体约占画面面积三分之一；'
+      + '横向宽幅，宽高比 ' + ratio(s.w, s.h) + '。');
+    // 4) 四色用色指导：让四种颜色都发挥作用，画面更出彩
+    out.push('配色只使用黑、红、黄、白四种，且四色都要用上：黑色画轮廓、结构与暗部；'
+      + '红色点缀视觉重点（如灯笼、花朵、关键物件）；黄色表现暖光、灯光与高光；'
+      + '白色做留白与亮部。避免整幅大白底或只有黑线勾勒的空洞画面。');
+    // 5) 风格与氛围
+    out.push('风格与氛围：' + [s.style, s.mood].filter(Boolean).join('，')
+      + '；整体为扁平插画 / 木刻版画质感，造型概括但细节丰富。'
+      + (s.elements ? '常用元素：' + s.elements + '（自然融入场景，不要平铺堆砌）。' : ''));
+    // 6) 门牌预留区 + 尺寸
+    if (s.doorTitle || s.doorNumber) {
+      out.push('这是「' + [s.doorTitle, s.doorNumber].filter(Boolean).join(' ') + '」这户人家的门牌，画面气质要契合这个家。');
+    }
+    out.push('画面底部约五分之一高度留给门牌文字区，保持浅色、简洁、不放主要主体；'
+      + '除该区域外画面内不要出现任何文字，也不要书写家庭名或门牌号（门牌文字由设备另行叠加）。'
+      + '目标尺寸 ' + (s.w * mult) + '×' + (s.h * mult) + ' px，最终显示在 ' + s.w + '×' + s.h + ' px 的 7.5 英寸墨水屏上。');
+    // 7) 负面约束
+    if (s.avoid) out.push('避免：' + s.avoid + '。');
+    return out.join('');
+  }
+
+  /* ---------------- 四色量化（Floyd–Steinberg） ---------------- */
+  const LIST = [PAL.black, PAL.red, PAL.yellow, PAL.white];
+  function quantize() {
+    const w = canvas.width, h = canvas.height;
+    const img = ctx.getImageData(0, 0, w, h), d = img.data;
+    const at = (x, y) => (y * w + x) * 4;
+    const nearest = (r, g, b) => {
+      let best = 0, bd = Infinity;
+      for (let i = 0; i < 4; i++) {
+        const p = LIST[i], dr = r - p[0], dg = g - p[1], db = b - p[2];
+        const dist = dr * dr * 0.3 + dg * dg * 0.59 + db * db * 0.11;
+        if (dist < bd) { bd = dist; best = i; }
+      }
+      return best;
+    };
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = at(x, y), p = LIST[nearest(d[i], d[i + 1], d[i + 2])];
+        const er = d[i] - p[0], eg = d[i + 1] - p[1], eb = d[i + 2] - p[2];
+        d[i] = p[0]; d[i + 1] = p[1]; d[i + 2] = p[2];
+        const spill = (xx, yy, f) => {
+          if (xx < 0 || yy < 0 || xx >= w || yy >= h) return;
+          const j = at(xx, yy);
+          d[j] += er * f; d[j + 1] += eg * f; d[j + 2] += eb * f;
+        };
+        spill(x + 1, y, 7 / 16); spill(x - 1, y + 1, 3 / 16);
+        spill(x, y + 1, 5 / 16); spill(x + 1, y + 1, 1 / 16);
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  /* ---------------- 内置插画引擎（离线可用） ---------------- */
+  function seeded(str) {
+    let a = 2166136261;
+    for (let i = 0; i < str.length; i++) { a ^= str.charCodeAt(i); a = Math.imul(a, 16777619); }
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function house(x, base, s, lit) {
+    ctx.fillStyle = C('black');
+    ctx.fillRect(x - s * .5, base - s * .52, s, s * .52);
+    ctx.beginPath();
+    ctx.moveTo(x - s * .62, base - s * .52); ctx.lineTo(x, base - s * .92); ctx.lineTo(x + s * .62, base - s * .52);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = C(lit ? 'yellow' : 'white');
+    ctx.fillRect(x - s * .32, base - s * .4, s * .2, s * .2);
+    ctx.fillRect(x + s * .12, base - s * .4, s * .2, s * .2);
+    ctx.fillStyle = C('red');
+    ctx.fillRect(x - s * .08, base - s * .28, s * .16, s * .28);
+  }
+  function tree(x, base, s) {
+    ctx.fillStyle = C('black');
+    ctx.fillRect(x - s * .05, base - s * .42, s * .1, s * .42);
+    ctx.beginPath(); ctx.arc(x, base - s * .58, s * .32, 0, 6.2832); ctx.fill();
+  }
+  function dog(x, base, s) {
+    ctx.fillStyle = C('black');
+    ctx.beginPath(); ctx.ellipse(x, base - s * .3, s * .42, s * .26, 0, 0, 6.2832); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + s * .42, base - s * .58, s * .22, 0, 6.2832); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x + s * .3, base - s * .74); ctx.lineTo(x + s * .38, base - s * .98); ctx.lineTo(x + s * .52, base - s * .72);
+    ctx.closePath(); ctx.fill();
+    ctx.fillRect(x - s * .3, base - s * .16, s * .09, s * .16);
+    ctx.fillRect(x + s * .12, base - s * .16, s * .09, s * .16);
+    ctx.lineWidth = Math.max(2, s * .09); ctx.strokeStyle = C('black');
+    ctx.beginPath();
+    ctx.moveTo(x - s * .4, base - s * .38);
+    ctx.quadraticCurveTo(x - s * .74, base - s * .5, x - s * .6, base - s * .8);
+    ctx.stroke();
+  }
+  function drawScene(text) {
+    const w = canvas.width, h = canvas.height, rnd = seeded(text || 'homia');
+    const night = /夜|月|星/.test(text), dusk = /傍晚|黄昏|夕阳|日落/.test(text);
+    const snow = /雪|冬|寒|冰/.test(text), rain = /雨|潮|阴/.test(text);
+    const flora = /花|园|草|树|叶|林|春/.test(text), pet = /狗|犬|猫|兔|宠物/.test(text);
+    const hill = /山|岭|峰|野|远/.test(text), water = /海|湖|河|溪|水|船/.test(text);
+    const pad = w * .04, horizon = h * .72;
+
+    ctx.fillStyle = C('white'); ctx.fillRect(0, 0, w, h);
+
+    const sunR = h * .12, sunX = w * (.62 + rnd() * .16), sunY = h * (dusk ? .36 : night ? .2 : .22);
+    ctx.fillStyle = C(night ? 'white' : 'yellow');
+    ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, 6.2832); ctx.fill();
+    ctx.lineWidth = Math.max(2, h * .01); ctx.strokeStyle = C('black'); ctx.stroke();
+    if (night) {
+      ctx.fillStyle = C('yellow');
+      ctx.beginPath(); ctx.arc(sunX + sunR * .3, sunY - sunR * .08, sunR * .85, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = C('black');
+      for (let i = 0; i < 24; i++) {
+        ctx.beginPath();
+        ctx.arc(pad + rnd() * (w - pad * 2), pad + rnd() * horizon * .55, h * (.004 + rnd() * .005), 0, 6.2832);
+        ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = C('black');
+      for (let i = 0; i < 3; i++) {
+        const cx = pad + rnd() * (w - pad * 2), cy = h * (.12 + rnd() * .18), r = h * (.03 + rnd() * .03);
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fill();
+      }
+    }
+
+    if (hill) {
+      ctx.fillStyle = C('black');
+      ctx.beginPath(); ctx.moveTo(-w * .05, horizon);
+      for (let i = 0; i <= 6; i++) ctx.lineTo(-w * .05 + (w * 1.1 / 6) * i, horizon - h * (.08 + rnd() * .22));
+      ctx.lineTo(w * 1.05, horizon); ctx.closePath(); ctx.fill();
+    }
+
+    ctx.fillStyle = C('white'); ctx.fillRect(0, horizon, w, h - horizon);
+    ctx.strokeStyle = C('black'); ctx.lineWidth = Math.max(2, h * .008);
+    ctx.beginPath(); ctx.moveTo(pad, horizon); ctx.lineTo(w - pad, horizon); ctx.stroke();
+    if (water) {
+      for (let i = 1; i <= 4; i++) {
+        const y = horizon + (h - horizon) * (i / 5);
+        ctx.beginPath(); ctx.moveTo(pad + w * .04 * i, y);
+        ctx.quadraticCurveTo(w * .5, y - h * .035, w - pad - w * .04 * i, y);
+        ctx.stroke();
+      }
+    }
+
+    const s = h * .32;
+    house(w * (.32 + rnd() * .12), horizon + (h - horizon) * .52, s, night || dusk);
+    if (flora || !pet) tree(w * (.13 + rnd() * .06), horizon + (h - horizon) * .58, h * .36);
+    if (pet) dog(w * (.62 + rnd() * .08), horizon + (h - horizon) * .62, h * .17);
+
+    if (flora) {
+      const cols = [PAL.red, PAL.yellow];
+      for (let i = 0; i < 18; i++) {
+        ctx.fillStyle = 'rgb(' + cols[i % 2].join(',') + ')';
+        const fx = pad + rnd() * (w - pad * 2), fy = horizon + (h - horizon) * (.25 + rnd() * .7);
+        ctx.beginPath(); ctx.arc(fx, fy, h * (.008 + rnd() * .008), 0, 6.2832); ctx.fill();
+      }
+    }
+
+    ctx.fillStyle = C('black');
+    if (snow) {
+      for (let i = 0; i < 60; i++) {
+        ctx.beginPath();
+        ctx.arc(pad + rnd() * (w - pad * 2), pad + rnd() * (h - pad * 2), h * (.004 + rnd() * .006), 0, 6.2832);
+        ctx.fill();
+      }
+    }
+    if (rain) {
+      ctx.lineWidth = Math.max(1.5, h * .005); ctx.strokeStyle = C('black');
+      for (let i = 0; i < 44; i++) {
+        const rx = pad + rnd() * (w - pad * 2), ry = pad + rnd() * (h - pad * 2), len = h * .05;
+        ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - len * .4, ry + len); ctx.stroke();
+      }
+    }
+  }
+
+  /* ---------------- 门牌文字叠加 ---------------- */
+  function drawDoorplate() {
+    const s = state();
+    if (!s.doorShow) return false;
+    const title = (s.doorTitle || '').trim(), number = (s.doorNumber || '').trim();
+    if (!title && !number) return false;
+    const w = canvas.width, h = canvas.height;
+    // 门牌条占画面底部约五分之一，字号随之放大，保证在 7.5 英寸屏上足够醒目
+    const barH = Math.max(34, Math.round(h * .2));
+    const y0 = h - barH, pad = Math.round(w * .04);
+    ctx.fillStyle = C('white'); ctx.fillRect(0, y0, w, barH);
+    ctx.fillStyle = C('black'); ctx.fillRect(0, y0, w, Math.max(2, Math.round(h * .008)));
+    ctx.textBaseline = 'middle';
+    const fit = (text, max, size, weight) => {
+      let px = size;
+      do {
+        ctx.font = weight + ' ' + px + 'px system-ui,"Microsoft Yahei",sans-serif';
+        if (ctx.measureText(text).width <= max) break;
+        px -= 1;
+      } while (px > 8);
+    };
+    // 门牌号：右侧红色色块 + 白色粗体，作为最醒目的视觉重点
+    const boxW = number ? Math.round(w * .34) : 0;
+    if (number) {
+      const boxX = w - boxW;
+      ctx.fillStyle = C('red'); ctx.fillRect(boxX, y0, boxW, barH);
+      ctx.fillStyle = C('black'); ctx.fillRect(boxX, y0, Math.max(2, Math.round(h * .008)), barH);
+      ctx.textAlign = 'center'; ctx.fillStyle = C('white');
+      fit(number, boxW - pad, Math.round(barH * .72), '800');
+      ctx.fillText(number, boxX + boxW / 2, y0 + barH * .52);
+    }
+    // 门牌标题：左侧黑色粗体，字号显著放大
+    if (title) {
+      ctx.textAlign = 'left'; ctx.fillStyle = C('black');
+      fit(title, w - pad * 2 - boxW, Math.round(barH * .62), '800');
+      ctx.fillText(title, pad, y0 + barH * .52);
+    }
+    return true;
+  }
+  function finish() { if (drawDoorplate()) quantize(); }
+  /* ---------------- 工具 ---------------- */
+  let toastTimer;
+  function toast(text) {
+    const el = $('#toast');
+    el.textContent = text; el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+  }
+  function status(message, kind) {
+    const el = $('#status');
+    el.textContent = message;
+    el.className = 'status' + (kind ? ' ' + kind : '');
+  }
+  function pick(obj, p) {
+    return String(p || 'data.0.url').split('.').reduce((a, k) => (a == null ? a : a[k]), obj);
+  }
+
+  /* ---------------- 日志 ---------------- */
+  const logs = [];
+  function clock() {
+    const d = new Date(), p = n => String(n).padStart(2, '0');
+    return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+  function log(kind, text) {
+    logs.push({ kind: kind, text: text, time: clock() });
+    if (logs.length > 200) logs.shift();
+    renderLog();
+  }
+  function renderLog() {
+    const box = $('#log');
+    box.innerHTML = logs.length
+      ? logs.map(l => '<div class="lg ' + l.kind + '"><span class="t">' + l.time + '</span>' + esc(l.text) + '</div>').join('')
+      : '<div class="lg dim">暂无日志。点击「测试连接」会真实跑一次请求，并把请求头、请求体、响应状态、响应体与结论全部记录在这里。</div>';
+    box.scrollTop = box.scrollHeight;
+  }
+  function trunc(s, n) {
+    s = String(s);
+    return s.length > n ? s.slice(0, n) + ' …（已截断，共 ' + s.length + ' 字符）' : s;
+  }
+  function mask(v) {
+    return v.length <= 8 ? '****（已脱敏）' : v.slice(0, 4) + '****' + v.slice(-4) + '（已脱敏）';
+  }
+  function maskHeaders(headers) {
+    const out = {};
+    Object.keys(headers || {}).forEach(k => {
+      const v = String(headers[k]);
+      out[k] = /(authorization|api[-_]?key|token|secret)/i.test(k) ? mask(v) : v;
+    });
+    return out;
+  }
+  function diagnose(err) {
+    if (err.cors && proxyMissing) {
+      return '本地代理不可用，直连又被跨域拒绝：当前页面所在的服务没有 /api/generate。'
+        + '请确认终端里 server.js 已打印 running at http://localhost:<端口>，并用那个端口访问页面。';
+    }
+    if (err.cors) return '跨域被拒（CORS）：接口未允许当前来源，或本地代理不可用。用 node server.js 打开页面可绕过。';
+    const s = err.status;
+    const api = err.apiMessage ? '：' + err.apiMessage : '';
+    if (s === 400 && /pixels|size/i.test(err.apiMessage || '')) {
+      return '出图尺寸不被接口接受（400）' + api + '。到「显示规格 → 模型出图尺寸」调大倍率或选 2K。';
+    }
+    if (s === 400) return '请求参数被接口拒绝（400）' + api + '。常见原因：size 格式（应为 800x480 这种小写 x）、model 名称、必填字段缺失。';
+    if (s === 401 || s === 403) return '鉴权失败（' + s + '）' + api + '：检查 headers 里的密钥是否正确、账号是否有该模型权限。';
+    if (s === 404) return '地址不存在（404）' + api + '：接口路径写错了，把文档里的完整 URL 粘进来（注意 /v1/ 这类版本段）。';
+    if (s === 429) return '限流或额度不足（429）' + api + '：稍后重试，或检查账号余额与 RPM 限制。';
+    if (s >= 500) return '接口服务端错误（' + s + '）' + api + '：服务商侧问题，稍后重试。';
+    if (/不是 JSON/.test(err.message)) return '响应不是 JSON：通常是打到了 HTML 错误页或代理，核对 endpoint。';
+    if (/未找到图片 URL/.test(err.message)) return '请求已成功，但按 responseImagePath 取不到图片地址。看上方响应体，把真实路径填进 responseImagePath。';
+    return err.message;
+  }
+  // 构造实际请求体：注入 prompt，并把尺寸类占位符换成显示规格
+  function buildBody(cfg, prompt, noisy) {
+    const s = state();
+    const mult = /^[1-9]$/.test(s.renderSize) ? parseInt(s.renderSize, 10) : 1;
+    const size = (s.renderSize === '2k' || s.renderSize === '4k')
+      ? s.renderSize
+      : (s.w * mult) + 'x' + (s.h * mult);
+    const raw = JSON.stringify(cfg.body || {})
+      .replace(/\{\{width\}\}/g, s.w)
+      .replace(/\{\{height\}\}/g, s.h)
+      .replace(/\{\{size\}\}/g, size)
+      .replace(/\{\{prompt\}\}/g, prompt);
+    const body = JSON.parse(raw);
+    if (body && Object.prototype.hasOwnProperty.call(body, 'size')) {
+      const value = String(body.size);
+      const m = /^\s*(\d+)\s*[*xX×]\s*(\d+)\s*$/.exec(value);
+      if (m && value !== m[1] + 'x' + m[2]) {
+        body.size = m[1] + 'x' + m[2];
+        if (noisy) log('warn', 'size 参数已按接口规范归一化为 ' + body.size + '（原值 ' + value + '）');
+      }
+    }
+    return body;
+  }
+  let serverApi = null;   // 服务端下发的接口配置（已剥离密钥）
+  let serverGeo = null;   // 服务端下发的非敏感和风配置（host/city/autoIp，不含 key）
+  let locManual = false;  // 用户是否手动改过「位置」；未改则每次按浏览器出口 IP 重新定位
+  function apiConfig() {
+    if (serverApi && serverApi.endpoint && !PLACEHOLDER.test(serverApi.endpoint)) return serverApi;
+    let c;
+    try { c = JSON.parse($('#config').value); } catch (e) { return null; }
+    if (!c || !c.endpoint) return null;
+    if (PLACEHOLDER.test(c.endpoint) || PLACEHOLDER.test(JSON.stringify(c.headers || {}))) return null;
+    return c;
+  }
+
+  /* ---------------- 渲染 ---------------- */
+  let current = { type: 'local' };
+  function loadImage(src, cross) {
+    return new Promise((resolve, reject) => {
+      const im = new Image();
+      if (cross) im.crossOrigin = 'anonymous';
+      im.onload = () => { log('ok', '图片加载成功 · ' + im.width + '×' + im.height); resolve(im); };
+      im.onerror = () => {
+        log('err', '图片加载失败：' + trunc(src, 120));
+        reject(new Error('接口返回的图片无法加载，请确认 URL 公开可访问、未过期且不需要鉴权'));
+      };
+      im.src = src;
+    });
+  }
+  async function drawRemote(src, cross) {
+    const im = await loadImage(src, cross);
+    const w = canvas.width, h = canvas.height;
+    const scale = Math.max(w / im.width, h / im.height);
+    const dw = im.width * scale, dh = im.height * scale;
+    ctx.fillStyle = C('white'); ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(im, (w - dw) / 2, (h - dh) / 2, dw, dh);
+    quantize();
+  }
+  async function paintImage(img) {
+    try {
+      await drawRemote(img.src, img.cross);
+    } catch (err) {
+      if (!img.fallback) throw err;
+      await drawRemote(img.fallback, true);
+      img.src = img.fallback; img.cross = true; img.proxy = false;
+    }
+    finish();
+  }
+  async function post(target, headers, payload, label) {
+    const started = Date.now();
+    log('info', '请求 ' + (label || target));
+    log('info', '请求头 ' + JSON.stringify(maskHeaders(headers)));
+    log('info', '请求体 ' + trunc(JSON.stringify(payload), 900));
+    let res;
+    try {
+      res = await fetch(target, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
+    } catch (err) {
+      if (err instanceof TypeError) {
+        const e = new Error('无法连接 ' + target + '：请求被浏览器拒绝（CORS 或网络不可达）');
+        e.cors = true;
+        log('err', e.message);
+        throw e;
+      }
+      throw err;
+    }
+    const raw = await res.text();
+    const ms = Date.now() - started;
+    log(res.ok ? 'ok' : 'err', '响应 HTTP ' + res.status + ' · 耗时 ' + ms + 'ms');
+    log(res.ok ? 'ok' : 'err', '响应体 ' + trunc(raw, 900));
+    if (!res.ok) {
+      const e = new Error('HTTP ' + res.status + ' · ' + target + (raw ? ' · ' + trunc(raw, 160) : ''));
+      e.status = res.status;
+      try {
+        const j = JSON.parse(raw);
+        e.apiMessage = (j.error && (j.error.message || j.error.code)) || j.message || '';
+      } catch (err) { /* 非 JSON 响应，忽略 */ }
+      throw e;
+    }
+    return raw;
+  }
+  function extractUrl(raw, cfg) {
+    let data;
+    try { data = JSON.parse(raw); } catch (e) { throw new Error('接口返回的不是 JSON：' + raw.slice(0, 160)); }
+    const url = pick(data, cfg.responseImagePath);
+    if (typeof url !== 'string' || !url) {
+      throw new Error('响应中未找到图片 URL（responseImagePath: ' + (cfg.responseImagePath || 'data.0.url') + '）');
+    }
+    return url;
+  }
+  let proxyMissing = false;
+  async function requestImage(cfg, prompt) {
+    const body = buildBody(cfg, prompt, true);
+    const path = cfg.responseImagePath || 'data.0.url';
+    if (cfg.useProxy !== false && proxied) {
+      const payload = { endpoint: cfg.endpoint, method: cfg.method || 'POST', headers: cfg.headers || {}, body: body };
+      try {
+        const url = extractUrl(await post('/api/generate', { 'Content-Type': 'application/json' }, payload,
+          (cfg.method || 'POST') + ' /api/generate（本地代理）→ ' + cfg.endpoint), cfg);
+        log('ok', '按 responseImagePath=' + path + ' 取到图片地址：' + trunc(url, 200));
+        return {
+          src: /^https?:/i.test(url) ? '/api/image?url=' + encodeURIComponent(url) : url,
+          fallback: url, cross: false, proxy: true
+        };
+      } catch (err) {
+        if (err.status !== 404) throw err;
+        proxyMissing = true;
+        log('warn', '本地代理 /api/generate 返回 404：当前页面不是由 server.js 提供，改为浏览器直连');
+        status('本地代理不可用（页面不是由 server.js 提供），已改为浏览器直连…');
+      }
+    }
+    const url = extractUrl(await post(cfg.endpoint, cfg.headers || {}, body,
+      (cfg.method || 'POST') + ' ' + cfg.endpoint), cfg);
+    log('ok', '按 responseImagePath=' + path + ' 取到图片地址：' + trunc(url, 200));
+    return { src: url, fallback: null, cross: true, proxy: false };
+  }
+
+  async function generate(mode) {
+    const btn = $('#generate-' + mode);
+    const label = btn.textContent;
+    const radio = $('#mode-' + mode);
+    if (radio) radio.checked = true;
+    btn.disabled = true; btn.textContent = '生成中…';
+    status('正在生成…');
+    try {
+      // 1) 先同步各输入参数的最新修改：读取并持久化（环境/节日/日程/偏好/门牌/描述）
+      persist();
+      // 2) 同步更新 prompt：按最新输入重新编译，并刷新「查看完整 Prompt」预览
+      refresh();
+      applySize();
+      const cfg = apiConfig();
+      if (cfg) {
+        // 3) 最后再调用生图模型（buildPrompt 实时读取上面的输入，确保用的是同步后的值）
+        const img = await requestImage(cfg, buildPrompt());
+        await paintImage(img);
+        current = { type: 'api', img: img };
+        $('#preview-tag').textContent = img.proxy ? 'API 出图 · 已四色量化' : 'API 直连出图 · 已四色量化';
+        status('已收到图片并映射到黑/红/黄/白四色'
+          + (img.proxy ? '' : '（直连模式：若接口不允许跨域，下载 PNG 会失败，建议用 node server.js 打开页面）')
+          + '，可直接下载。', 'ok');
+      } else {
+        const s = state();
+        drawScene(s.prompt);
+        finish();
+        current = { type: 'local' };
+        $('#preview-tag').textContent = '本地插画 · 四色';
+        status('未配置生图 API，已用内置插画引擎离线出图，可直接下载 PNG。', 'ok');
+      }
+      toast('壁纸已生成');
+    } catch (err) {
+      const msg = (err instanceof TypeError && /fetch/i.test(err.message))
+        ? '浏览器无法建立请求（CORS 或网络被拒绝）；用 node server.js 打开页面可走本地代理'
+        : err.message;
+      status('生成失败：' + msg + '（完整日志见「生图 API → 接口日志」）', 'err');
+      log('err', '结论：' + diagnose(err));
+      toast('生成失败');
+    } finally {
+      btn.disabled = false; btn.textContent = label;
+    }
+  }
+
+  function applySize() {
+    const s = state();
+    if (canvas.width !== s.w || canvas.height !== s.h) { canvas.width = s.w; canvas.height = s.h; }
+    const dim = s.w + ' × ' + s.h;
+    $('#dim').textContent = dim;
+    if ($('#dim2')) $('#dim2').textContent = dim;
+  }
+  async function repaint() {
+    applySize();
+    if (current.type === 'api') {
+      try { await paintImage(current.img); return; } catch (e) { /* 回落到本地 */ }
+    }
+    drawScene(state().prompt); finish();
+  }
+
+  /* ---------------- 导出与图片库 ---------------- */
+  function saveFile(dataUrl, name) {
+    const a = document.createElement('a');
+    a.href = dataUrl; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  function snapshot() {
+    try { return canvas.toDataURL('image/png'); }
+    catch (e) { return null; }
+  }
+  function fileName() {
+    return 'homia-' + canvas.width + 'x' + canvas.height + '-' + Date.now() + '.png';
+  }
+
+  $('#download').onclick = () => {
+    const data = snapshot();
+    if (!data) { status('导出失败：跨域图片无法读取像素。请通过 node server.js 打开页面，或在配置中保留本地代理。', 'err'); return; }
+    saveFile(data, fileName());
+    toast('PNG 已下载');
+  };
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  /* ---------------- 上下文摘要 ---------------- */
+  function renderContext() {
+    const s = state();
+    const join = arr => arr.filter(Boolean).join(' · ') || '未设置';
+    const rows = [
+      ['节日', join([s.holiday, s.date])],
+      ['日程', s.events.length ? s.events.map(evDesc).join('、') : '未设置'],
+      ['环境', join([s.location, s.season, s.weather, s.temp, s.period])],
+      ['偏好', join([s.style, s.elements, s.mood])],
+      ['门牌', join([s.doorTitle, s.doorNumber])]
+    ];
+    $('#context-list').innerHTML = rows.map(r =>
+      '<div class="ctx-row"><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>'
+    ).join('');
+  }
+
+  /* ---------------- 上下文标签 ---------------- */
+  function renderChips() {
+    const s = state();
+    const words = [s.holiday, s.season, s.weather, s.location.split(/[，,]/)[0]]
+      .concat(s.elements.split(/[，,]/), s.mood.split(/[，,]/))
+      .map(x => (x || '').trim()).filter(Boolean);
+    const unique = words.filter((x, i) => words.indexOf(x) === i).slice(0, 10);
+    const box = $('#chips');
+    box.innerHTML = '';
+    unique.forEach(word => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = word;
+      b.onclick = () => {
+        const ta = $('#prompt');
+        ta.value = ta.value.trim() ? ta.value.trim() + '，' + word : word;
+        refresh(); ta.focus();
+      };
+      box.appendChild(b);
+    });
+  }
+
+  /* ---------------- API 配置 ---------------- */
+  function refresh() {
+    const s = state();
+    renderChips();
+    const rs = $('#render-size');
+    if (rs) {
+      [1, 2, 3, 4].forEach(m => {
+        const opt = rs.querySelector('option[value="' + m + '"]');
+        if (opt) {
+          opt.textContent = m + ' 倍 · ' + (s.w * m) + ' × ' + (s.h * m)
+            + '（' + ((s.w * m * s.h * m) / 1_000_000).toFixed(2) + ' 百万像素）';
+        }
+      });
+    }
+    renderContext();
+    $('#compiled-auto').textContent = buildPrompt('auto');
+    $('#compiled-manual').textContent = buildPrompt('manual');
+    const cfg = apiConfig();
+    if (!cfg) {
+      $('#request').textContent = '当前为内置插画模式：未检测到可用的生图 endpoint，不会发起网络请求。';
+      return;
+    }
+    const body = buildBody(cfg, buildPrompt(), false);
+    const viaProxy = cfg.useProxy !== false && proxied;
+    const target = viaProxy ? 'POST /api/generate → ' + cfg.endpoint : (cfg.method || 'POST') + ' ' + cfg.endpoint;
+    const innerHeaders = (cfg.headers && Object.keys(cfg.headers).length)
+      ? cfg.headers : '<密钥由服务端注入，不下发到浏览器>';
+    const shown = viaProxy
+      ? { headers: { 'Content-Type': 'application/json' }, body: { endpoint: cfg.endpoint, method: cfg.method || 'POST', headers: innerHeaders, body: body } }
+      : { headers: innerHeaders, body: body };
+    $('#request').textContent = target + '\n' + JSON.stringify(shown, null, 2);
+  }
+  $('#save-api').onclick = () => {
+    let ok = false;
+    try { JSON.parse($('#config').value); ok = true; } catch (e) { /* noop */ }
+    if (!ok) { $('#save-tip').textContent = 'JSON 格式错误'; toast('配置 JSON 格式错误'); return; }
+    save(KEY.api, $('#config').value);
+    // api 以服务端 data/api.json 为准；浏览器里的改动只作本地备份，用于无服务端时直连调试
+    $('#save-tip').textContent = serverApi
+      ? '当前使用服务端 data/api.json；此处改动仅存本地做备份'
+      : '已保存到本地浏览器';
+    refresh(); toast('API 配置已保存');
+  };
+  async function runTest() {
+    log('info', '———— 开始接口测试 ————');
+    const cfg = apiConfig();
+    if (!cfg) {
+      log('err', '配置无效：JSON 解析失败，或 endpoint / 密钥仍是示例值（your-api.example.com、YOUR_API_KEY）');
+      toast('配置无效，请检查 JSON 与 endpoint');
+      return;
+    }
+    const viaProxy = cfg.useProxy !== false && proxied;
+    log('info', 'endpoint：' + cfg.endpoint);
+    log('info', '请求模式：' + (viaProxy ? '本地代理 /api/generate' : '浏览器直连'));
+    if (viaProxy) {
+      try {
+        const r = await fetch('/api/ping');
+        const d = await r.json().catch(() => ({}));
+        log(r.ok && d.ok ? 'ok' : 'warn',
+          r.ok && d.ok ? '本地代理探测成功（/api/ping）' : '本地代理探测异常：HTTP ' + r.status + '，将回退直连');
+      } catch (e) {
+        log('warn', '本地代理探测失败：' + e.message + '，将回退直连');
+      }
+    } else if (!proxied) {
+      log('warn', '当前是 file:// 直接打开的页面，无法使用本地代理，只能直连（跨域可能被拒绝）');
+    } else {
+      log('info', '配置为 useProxy:false，按配置直连');
+    }
+    try {
+      const img = await requestImage(cfg, buildPrompt());
+      try {
+        await loadImage(img.src, img.cross);
+        log('ok', '结论：生图接口链路正常，可以回工作台生成');
+        toast('接口测试通过');
+      } catch (e) {
+        if (img.fallback) {
+          log('warn', '代理取图失败，尝试直连原始地址…');
+          try {
+            await loadImage(img.fallback, true);
+            log('warn', '结论：接口正常，但本地图片代理 /api/image 不可用；请改用 node server.js 打开页面，否则下载 PNG 会失败');
+            toast('接口可用，图片代理不可用');
+            return;
+          } catch (e2) {
+            log('err', '直连同样失败：' + e2.message);
+          }
+        }
+        log('err', '结论：接口正常，但返回的图片地址浏览器读不到（需鉴权 / 已过期 / 非公开可访问）');
+        toast('接口可用，但图片无法加载');
+      }
+    } catch (err) {
+      log('err', '结论：' + diagnose(err));
+      toast('接口测试失败，详见接口日志');
+    }
+  }
+  $('#test-api').onclick = async () => {
+    const btn = $('#test-api'), label = btn.textContent;
+    btn.disabled = true; btn.textContent = '测试中…';
+    try { await runTest(); } finally { btn.disabled = false; btn.textContent = label; }
+  };
+  $('#clear-log').onclick = () => { logs.length = 0; renderLog(); };
+
+  /* ---------------- 天气（高德 Web 服务，经本地代理） ---------------- */
+  // 浏览器出口 IP 定位城市：用 JSONP 调 pconline，请求从用户本地浏览器发出，
+  // 因此拿到的是浏览器出口 IP 对应的城市，而不是 server.js 所在服务器的 IP。
+  // pconline 不带 json=true 时返回 `if(window.IPCallBack){IPCallBack({...})}`，故挂全局回调。
+  // 浏览器端 IP 定位：直接取「用户浏览器」的真实出口 IP（而非服务端出口），部署在云端也不会失真
+  async function browserLoc() {
+    const sources = [
+      async () => {
+        const d = await fetch('https://ipwho.is/').then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)));
+        if (!d || d.success === false) throw new Error((d && d.message) || 'IP 定位返回异常');
+        return (d.city || d.region || '').trim();
+      },
+      async () => {
+        const d = await fetch('https://ipinfo.io/json').then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)));
+        return (d.city || d.region || '').trim();
+      }
+    ];
+    let lastErr;
+    for (const fn of sources) {
+      try {
+        const c = await fn();
+        if (c) return { city: c, ip: '' };
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error('浏览器端 IP 定位全部失败');
+  }
+  function periodByHour(h) {
+    if (h >= 5 && h < 11) return '早晨';
+    if (h < 17) return '午后';
+    if (h < 20) return '傍晚';
+    return '夜晚';
+  }
+  function seasonByMonth(m) {
+    if (m >= 3 && m <= 5) return '春';
+    if (m >= 6 && m <= 8) return '夏';
+    if (m >= 9 && m <= 11) return '秋';
+    return '冬';
+  }
+  function applyWeather(d) {
+    const now = new Date();
+    if (d.location) $('#location').value = d.location;
+    if (d.weather) $('#weather').value = d.weather;
+    if (d.temperature) $('#temperature').value = d.temperature + '°C';
+    $('#period').value = periodByHour(now.getHours());
+    $('#season').value = seasonByMonth(now.getMonth() + 1);
+    const obs = (d.reporttime || '').replace('T', ' ').slice(0, 16);
+    const el = $('#locstatus');
+    el.textContent = '已更新：' + $('#location').value + ' · ' + $('#weather').value + ' · ' + $('#temperature').value
+      + (d.source === 'ip' ? '（浏览器出口 IP 定位）' : d.source === 'browser' ? '（浏览器直连和风）' : '')
+      + (obs ? '（观测 ' + obs + '）' : '');
+    persist(); refresh(); toast('位置与实时天气已更新');
+  }
+  $('#locate').onclick = async () => {
+    const el = $('#locstatus');
+    if (!proxied) {
+      el.textContent = '自动获取需要本地服务：请用 node server.js 启动后访问页面。';
+      toast('自动获取需要本地服务');
+      return;
+    }
+    el.textContent = '正在获取实时天气…';
+    let city = ($('#location').value || '').split(/[，,]/)[0].trim();
+    // 用户未手动改过「位置」时，每次都按浏览器出口 IP 重新定位，避免被持久化的旧城市（如默认的“上海”）卡住
+    if (!locManual) {
+      try {
+        const d = await browserLoc();
+        const c = (d.city || '').trim();
+        if (c) {
+          city = c;
+          log('info', '已按浏览器 IP 定位城市：' + c + (d.ip ? '（' + d.ip + '）' : ''));
+        }
+      } catch (e) {
+        log('warn', '浏览器端 IP 定位失败：' + e.message + '，将回退服务端出口 IP 兜底');
+        city = ''; // 清空，让服务端用其出口 IP 兜底
+      }
+    }
+    // 天气由服务端代理获取：key 始终留在服务端，浏览器只传城市名，不接触 key。
+    // 若 city 为空（浏览器端定位失败且用户未手填），服务端会按出口 IP 兜底定位
+    try {
+      const res = await fetch('/api/geo' + '?city=' + encodeURIComponent(city));
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || ('HTTP ' + res.status));
+      applyWeather(await res.json());
+    } catch (err) {
+      el.textContent = '获取失败：' + err.message + ' 也可直接在下方手动填写。';
+      toast('天气获取失败');
+    }
+  };
+
+  /* ---------------- 事件绑定 ---------------- */
+  const REPAINT_KEYS = ['width', 'height', 'door-title', 'door-number', 'door-show'];
+  $('#generate-auto').onclick = () => generate('auto');
+  $('#generate-manual').onclick = () => generate('manual');
+  $('#save-input').onclick = async () => {
+    save(KEY.form, readForm());
+    flagSaved('已保存到本地浏览器');
+    refresh();
+    toast('输入信息已保存');
+  };
+  document.addEventListener('input', e => {
+    persist(); refresh();
+    if (e.target.id === 'location') locManual = true; // 用户手动填了城市，后续用他填的，不再自动 IP 定位
+    if (REPAINT_KEYS.indexOf(e.target.id) >= 0) repaint();
+  });
+  document.addEventListener('change', e => { if (e.target.name === 'mode') refresh(); });
+
+  /* ---------------- 日程 / 纪念日（内联编辑，可增删改，不限条目） ---------------- */
+  function evDesc(e) {
+    const d = e.date ? e.date + ' · ' : '';
+    return (d + (e.desc || '')).trim();
+  }
+  function renderEvents() {
+    const box = $('#event-list');
+    if (!eventsData.length) {
+      box.innerHTML = '<p class="hint">暂无日程 / 纪念日，点击下方按钮添加。</p>';
+      return;
+    }
+    box.innerHTML = eventsData.map((ev, i) =>
+      '<div class="evt-row">'
+      + '<input type="date" class="evt-date" data-i="' + i + '" value="' + esc(ev.date || '') + '">'
+      + '<input class="evt-desc" data-i="' + i + '" placeholder="事件描述，例如：妈妈生日" value="' + esc(ev.desc || '') + '">'
+      + '<button type="button" class="btn sm evt-del" data-i="' + i + '">删除</button>'
+      + '</div>'
+    ).join('');
+  }
+  $('#event-list').addEventListener('input', e => {
+    const i = e.target.dataset.i;
+    if (i == null) return;
+    if (e.target.classList.contains('evt-date')) eventsData[i].date = e.target.value;
+    if (e.target.classList.contains('evt-desc')) eventsData[i].desc = e.target.value;
+    persist(); refresh();
+  });
+  $('#event-list').addEventListener('click', e => {
+    const del = e.target.closest('.evt-del');
+    if (del) { eventsData.splice(+del.dataset.i, 1); renderEvents(); persist(); refresh(); toast('已删除'); }
+  });
+  $('#event-add').onclick = () => {
+    eventsData.push({ date: '', desc: '' });
+    renderEvents(); persist(); refresh(); toast('已添加一行');
+  };
+
+  /* ---------------- 初始化 ---------------- */
+  async function boot() {
+    const local = load(KEY.form, null) || {};
+    let data = local;
+    let apiText = load(KEY.api, null);
+    if (proxied) {
+      try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+          const cfg = await res.json();
+          // 服务端只提供 sources 的首次默认值 + device/api/geo；用户数据（sources 改动 + 门牌）以本地浏览器为准
+          data = Object.assign({}, cfg.sources || {}, cfg.device || {}, local);
+          // 显示规格（分辨率 / 出图倍率）由服务端 data/device.json 维护，不走表单
+          DEV = Object.assign({}, DEV, cfg.device || {});
+          if (cfg.api && Object.keys(cfg.api).length) {
+            serverApi = cfg.api;
+            apiText = JSON.stringify(cfg.api, null, 2);
+          }
+          serverGeo = cfg.geo || null;
+          flagSaved('服务端配置已加载 · 输入存本地');
+          log('info', '已从服务端加载 device / api / geo 与 sources 默认值；输入信息与门牌仅存本地浏览器'
+            + (PLACEHOLDER.test(JSON.stringify(cfg.api || {})) ? '（api.json 仍是示例值，不会发起请求）' : ''));
+        } else {
+          const hint = '未连接到 server.js（HTTP ' + res.status + '），仅使用浏览器本地配置';
+          flagSaved(hint, true);
+          log('warn', hint + '：请用 node server.js 启动后访问它监听的端口');
+        }
+      } catch (e) {
+        flagSaved('读取服务端配置失败，改用本地：' + e.message, true);
+        log('err', '读取服务端配置失败：' + e.message + '，已回退浏览器本地配置');
+      }
+    } else {
+      flagSaved('仅存本地浏览器');
+    }
+    if (!data.events) data.events = [{ date: '2026-09-12', desc: '周末家庭聚餐' }];
+    if (data.doorShow === undefined) data.doorShow = true;
+    applyForm(data);
+    renderEvents();
+    $('#config').value = apiText || JSON.stringify(SAMPLE, null, 2);
+    if (!$('#config').value.trim()) $('#config').value = JSON.stringify(SAMPLE, null, 2);
+    applySize();
+    refresh();
+    renderLog();
+    drawScene(state().prompt);
+    finish();
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
