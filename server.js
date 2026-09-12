@@ -24,8 +24,8 @@ const DEFAULTS = {
     holiday: '秋分', holidayDate: '2026-09-23', holidayNote: '昼夜均分，适合安静的秋日意象。',
     events: [{ date: '2026-09-12', desc: '周末家庭聚餐' }],
     location: '', weather: '晴朗', temperature: '23°C', season: '初秋', period: '傍晚',
-    style: '极简, 温暖, 自然, 水墨', elements: '花园, 小狗, 家, 家人',
-    mood: '平静, 温暖', avoid: '照片写实, 蓝紫渐变, 大面积纯白空场, 密集文字, 悬浮漂浮的无关物体'
+    style: '现代东方极简, 装饰插画, 高级平面海报感, 留白均衡', elements: '植物枝叶, 花卉, 山水轮廓, 云气, 日月, 几何纹样, 印章, 边框',
+    mood: '平静, 温暖', avoid: '照片写实, 任何四色（黑红黄白）以外的颜色, 蓝/青/绿/紫色天空与背景, 蓝紫渐变, 密集文字, 悬浮漂浮的无关物体, 农家院子/村庄/土墙/篱笆等乡土场景, 写实的人物特写, 图标拼贴, 元素罗列堆砌, 供桌/祭台式静物陈列, 祭祀供奉感, 门牌号过小或位置不突出, 门牌号大小或位置不稳定, 单侧或单角出现大片空白, 画面底部出现横条/色块/两个格子, 门牌号与背景图案互相遮挡或重叠穿插'
   },
   // device 只保留设备规格；门牌信息（doorTitle / doorNumber / doorShow）改为存浏览器本地，不落服务端
   device: { width: 800, height: 480, renderSize: '4' },
@@ -43,7 +43,7 @@ const DEFAULTS = {
 // 门牌信息属于终端用户自己的数据，只存浏览器本地：服务端下发与写入都要剔除
 const DOOR_KEYS = ['doorTitle', 'doorNumber', 'doorShow'];
 // 含密钥的配置文件绝不通过静态路由暴露（否则前端拿不到 key 的设计形同虚设）
-const DENY_FILES = ['/data/api.json', '/data/geo.json'];
+const DENY_FILES = ['/data/api.json', '/data/geo.json', '/data/llm.json'];
 // 远程写入 data/*.json 的管理口令；默认关闭，配置服务端配置请直接改文件
 const ADMIN_TOKEN = (process.env.ADMIN_TOKEN || '').trim();
 
@@ -60,6 +60,24 @@ function ensure(name, fallback) {
   const cur = readJson(name, null);
   if (cur == null) { writeJson(name, fallback); return fallback; }
   return cur;
+}
+// 把 {{key}} 占位符替换进模板的字符串值内部（避免先 stringify 再替换时把引号/换行写坏）
+function fillTemplate(value, map) {
+  if (typeof value === 'string') {
+    return Object.keys(map).reduce((s, k) => s.split('{{' + k + '}}').join(map[k]), value);
+  }
+  if (Array.isArray(value)) return value.map(v => fillTemplate(v, map));
+  if (value && typeof value === 'object') {
+    const out = {};
+    Object.keys(value).forEach(k => { out[k] = fillTemplate(value[k], map); });
+    return out;
+  }
+  return value;
+}
+// 按 "choices.0.message.content" 这类路径从响应体里取文本
+function pickPath(obj, p) {
+  if (!p) return obj;
+  return String(p).split('.').reduce((a, k) => (a == null ? a : a[k]), obj);
 }
 
 // 首次启动生成默认文件；之后所有读写都直接走磁盘，外部手改 JSON 立即生效，无需重启
@@ -112,6 +130,7 @@ const server = http.createServer(async (req, res) => {
     const all = loadAll();
     const api = all.api || {};
     const geo = readJson('geo.json', DEFAULTS.geo); // loadAll 不含 geo，这里单独读
+    const llm = readJson('llm.json', null); // LLM 生成生图 Prompt 的配置，只暴露「是否可用」，密钥留在服务端
     // 只下发非敏感字段：Authorization 等请求头始终留在服务端（api 的 key 不下发）
     const exposed = {
       endpoint: api.endpoint,
@@ -129,9 +148,11 @@ const server = http.createServer(async (req, res) => {
     // device 不下发门牌信息（门牌只存在用户浏览器本地）
     const deviceExposed = {};
     Object.keys(all.device || {}).forEach(k => { if (DOOR_KEYS.indexOf(k) < 0) deviceExposed[k] = all.device[k]; });
+    // LLM 只下发「是否已配置」，endpoint / headers / body 均含密钥，绝不下发
+    const llmExposed = { configured: !!(llm && llm.endpoint && llm.body) };
     return reply(res, 200, JSON.stringify({
       // sources 只作为「首次访问的默认值」，用户改动仅存浏览器本地、不回写
-      sources: all.sources, device: deviceExposed, api: exposed, geo: geoExposed
+      sources: all.sources, device: deviceExposed, api: exposed, geo: geoExposed, llm: llmExposed
     }));
   }
 
@@ -261,6 +282,45 @@ const server = http.createServer(async (req, res) => {
       const reason = error.cause && error.cause.message ? error.cause.message : error.message;
       console.error('Upstream image API request failed:', reason);
       reply(res, 502, JSON.stringify({ error: '代理请求失败：' + reason }));
+    }
+    return;
+  }
+
+  // LLM 生成生图 Prompt 代理：指令由前端按输入信息拼好，模板与密钥留在服务端 data/llm.json
+  if (req.method === 'POST' && url.pathname === '/api/llm') {
+    try {
+      const input = JSON.parse(await readBody(req, 2_000_000) || '{}');
+      const conf = readJson('llm.json', null);
+      if (!conf || !conf.endpoint || !conf.body) {
+        return reply(res, 400, JSON.stringify({
+          error: '未配置 LLM：请在 data/llm.json 填写 endpoint / headers / body（body 里用 {{instruction}} 占位符接收指令）后重启服务。'
+        }));
+      }
+      if (!/^https?:\/\//i.test(conf.endpoint)) return reply(res, 400, JSON.stringify({ error: 'llm.json 的 endpoint 必须是 HTTP(S) 地址' }));
+      const instruction = String(input.instruction || '').trim();
+      if (!instruction) return reply(res, 400, JSON.stringify({ error: '缺少 instruction：没有可用的输入信息来生成 Prompt。' }));
+      const upstream = await fetch(conf.endpoint, {
+        method: conf.method || 'POST',
+        headers: conf.headers || {},
+        body: JSON.stringify(fillTemplate(conf.body, { instruction: instruction }))
+      });
+      const text = await upstream.text();
+      if (!upstream.ok) {
+        return reply(res, 502, JSON.stringify({ error: 'LLM 请求失败：HTTP ' + upstream.status + (text ? ' · ' + text.slice(0, 200) : ' · 空响应') }));
+      }
+      let data = null;
+      try { data = JSON.parse(text); } catch (e) { /* 非 JSON，交给下面统一报错 */ }
+      if (!data) return reply(res, 502, JSON.stringify({ error: 'LLM 返回的不是 JSON：' + text.slice(0, 200) }));
+      const path = conf.responseTextPath || 'choices.0.message.content';
+      const prompt = pickPath(data, path);
+      if (typeof prompt !== 'string' || !prompt.trim()) {
+        return reply(res, 502, JSON.stringify({ error: '按 responseTextPath=' + path + ' 没取到文本，请核对 data/llm.json 与响应体。' }));
+      }
+      reply(res, 200, JSON.stringify({ prompt: prompt.trim() }));
+    } catch (error) {
+      const reason = error.cause && error.cause.message ? error.cause.message : error.message;
+      console.error('Upstream LLM request failed:', reason);
+      reply(res, 502, JSON.stringify({ error: 'LLM 代理请求失败：' + reason }));
     }
     return;
   }

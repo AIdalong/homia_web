@@ -1,0 +1,23 @@
+{
+  "endpoint": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer be346601-c390-4394-a901-569530758ade"
+  },
+  "body": {
+    "model": "deepseek-v4-flash-ga-260731",
+    "messages": [
+      {
+        "role": "system",
+        "content": "你是资深的插画创意导演，擅长把设定写成画面感强、可控且不落俗套的中文生图提示词。"
+      },
+      {
+        "role": "user",
+        "content": "{{instruction}}"
+      }
+    ],
+    "temperature": 1.2
+  },
+  "responseTextPath": "choices.0.message.content"
+}
