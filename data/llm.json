@@ -6,11 +6,11 @@
     "Authorization": "Bearer be346601-c390-4394-a901-569530758ade"
   },
   "body": {
-    "model": "deepseek-v4-flash-ga-260731",
+    "model": "deepseek-v4-pro-ga-260813",
     "messages": [
       {
         "role": "system",
-        "content": "你是资深的插画创意导演，擅长把设定写成画面感强、可控且不落俗套的中文生图提示词。"
+        "content": "你是 Homia 的创意策展人，专为电子门牌策划温暖、明亮、可爱的「家庭名片」画面，擅长把设定写成画面感强、可控且不落俗套的中文生图提示词。"
       },
       {
         "role": "user",
