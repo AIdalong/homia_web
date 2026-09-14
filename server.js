@@ -264,7 +264,8 @@ const server = http.createServer(async (req, res) => {
   // 生图接口代理
   if (req.method === 'POST' && url.pathname === '/api/generate') {
     try {
-      const input = JSON.parse(await readBody(req, 2_000_000) || '{}');
+      // 上限放宽到 12MB：图生图时前端会把压缩后的参考图以 base64 一起发过来
+      const input = JSON.parse(await readBody(req, 12_000_000) || '{}');
       // 前端不下发密钥：缺少的 endpoint / headers 由服务端配置补齐
       const saved = readJson('api.json', DEFAULTS.api);
       const endpoint = input.endpoint || saved.endpoint;
@@ -289,7 +290,7 @@ const server = http.createServer(async (req, res) => {
   // LLM 生成生图 Prompt 代理：指令由前端按输入信息拼好，模板与密钥留在服务端 data/llm.json
   if (req.method === 'POST' && url.pathname === '/api/llm') {
     try {
-      const input = JSON.parse(await readBody(req, 2_000_000) || '{}');
+      const input = JSON.parse(await readBody(req, 12_000_000) || '{}');
       const conf = readJson('llm.json', null);
       if (!conf || !conf.endpoint || !conf.body) {
         return reply(res, 400, JSON.stringify({
@@ -299,10 +300,12 @@ const server = http.createServer(async (req, res) => {
       if (!/^https?:\/\//i.test(conf.endpoint)) return reply(res, 400, JSON.stringify({ error: 'llm.json 的 endpoint 必须是 HTTP(S) 地址' }));
       const instruction = String(input.instruction || '').trim();
       if (!instruction) return reply(res, 400, JSON.stringify({ error: '缺少 instruction：没有可用的输入信息来生成 Prompt。' }));
+      // image 为可选的参考图（data URL）；llm.json 的 body 里用 {{image}} 占位符接，未写则该字段被忽略
+      const image = String(input.image || '');
       const upstream = await fetch(conf.endpoint, {
         method: conf.method || 'POST',
         headers: conf.headers || {},
-        body: JSON.stringify(fillTemplate(conf.body, { instruction: instruction }))
+        body: JSON.stringify(fillTemplate(conf.body, { instruction: instruction, image: image }))
       });
       const text = await upstream.text();
       if (!upstream.ok) {
