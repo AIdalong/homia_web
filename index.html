@@ -71,15 +71,21 @@ textarea{min-height:118px;resize:vertical;line-height:1.7}
 .chip:hover{border-color:var(--green);background:var(--green-soft)}
 .refbox{border:1.5px dashed #d6e0d9;border-radius:9px;padding:12px;display:flex;flex-direction:column;gap:9px;align-items:flex-start;transition:border-color .15s,background .15s}
 .refbox.over{border-color:var(--green);background:var(--green-soft)}
+.refbox.bad{border-color:var(--red);background:#fdf1f0}
 .refpreview{display:flex;align-items:center;gap:12px}
 .refpreview img{max-width:190px;max-height:110px;border-radius:8px;border:1px solid #d6e0d9;display:block;background:#fff}
-.modes,.two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.mode{display:block;text-align:left;border:1px solid #d6e0d9;border-radius:8px;padding:10px 13px;cursor:pointer}
-.mode:hover{border-color:#a9c3b3;background:#f7fbf8}
-.mode b{display:block;font-size:13px}
-.mode small{display:block;color:#8f9b94;font-size:11.5px;margin-top:2px}
-#mode-manual:checked ~ .modes .mode[for=mode-manual],
-#mode-auto:checked ~ .modes .mode[for=mode-auto]{border-color:var(--green);background:var(--green-soft);box-shadow:0 0 0 1px var(--green) inset}
+/* ---------- 直接上传：取景（裁剪）器 ---------- */
+#up-crop,#up-preview{width:100%}
+.crop-stage{position:relative;width:100%;max-width:560px;aspect-ratio:5/3;overflow:hidden;border-radius:9px;background:#20251f;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+.crop-stage.dragging{cursor:grabbing}
+.crop-stage img{position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0;pointer-events:none;-webkit-user-drag:none}
+.crop-grid{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);background:linear-gradient(rgba(255,255,255,.2),rgba(255,255,255,.2)) 33.333% 0/1px 100% no-repeat,linear-gradient(rgba(255,255,255,.2),rgba(255,255,255,.2)) 66.666% 0/1px 100% no-repeat,linear-gradient(rgba(255,255,255,.2),rgba(255,255,255,.2)) 0 33.333%/100% 1px no-repeat,linear-gradient(rgba(255,255,255,.2),rgba(255,255,255,.2)) 0 66.666%/100% 1px no-repeat}
+.crop-bar{display:flex;align-items:center;gap:10px;margin-top:10px;width:100%;max-width:560px}
+.crop-lab{flex:none;font-size:12.5px;color:var(--muted)}
+.crop-bar input[type=range]{flex:1;min-width:0;accent-color:var(--green)}
+.crop-acts{display:flex;gap:9px;margin-top:11px}
+#up-crop-hint{margin:9px 0 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 details{margin-top:22px;border-top:1px solid var(--line);padding-top:13px}
 summary{font-size:12px;color:var(--muted);cursor:pointer}
 pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Consolas,monospace;color:#4d5a4e;background:#f6faf7;border:1px solid var(--line);border-radius:7px;padding:11px;margin:10px 0 0}
@@ -122,6 +128,24 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
 .tag{font-style:normal;font-size:11px;color:var(--muted);border:1px solid var(--line);padding:3px 8px;border-radius:20px;white-space:nowrap}
 .card-head .btn{flex:none}
 #studio .card{margin-bottom:0}
+/* ---------- 工作台：三种生成方式（标签页切换，纯 CSS，无需 JS 参与显隐） ---------- */
+/* radio 只用于承载选中状态，视觉隐藏但保留键盘可达性（方向键可切换） */
+.wb-radio{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;margin:0}
+.wb-tabs{display:flex;gap:6px;padding:5px;background:#eef3ef;border:1px solid var(--line);border-radius:11px}
+.wb-tab{flex:1;min-width:0;text-align:center;padding:10px 12px;border-radius:8px;font-size:13.5px;font-weight:600;color:#5a665e;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,color .15s,box-shadow .15s}
+.wb-tab:hover{background:#e2ece6;color:var(--green-dark)}
+#wbm-auto:checked ~ .workbench [for=wbm-auto],
+#wbm-manual:checked ~ .workbench [for=wbm-manual],
+#wbm-upload:checked ~ .workbench [for=wbm-upload]{background:#fff;color:var(--green-dark);box-shadow:0 1px 3px rgba(29,42,34,.1)}
+#wbm-auto:focus-visible ~ .workbench [for=wbm-auto],
+#wbm-manual:focus-visible ~ .workbench [for=wbm-manual],
+#wbm-upload:focus-visible ~ .workbench [for=wbm-upload]{outline:2px solid var(--green);outline-offset:2px}
+.wb-panel{display:none}
+#wbm-auto:checked ~ .workbench #panel-auto,
+#wbm-manual:checked ~ .workbench #panel-manual,
+#wbm-upload:checked ~ .workbench #panel-upload{display:block;animation:fade .18s ease}
+/* 标题由标签栏承担，卡内只留说明与主操作按钮 */
+.wb-panel .card-desc{margin:0;font-size:13.5px;line-height:1.7;color:#5a665e;max-width:82ch}
 .workbench{display:flex;flex-direction:column;gap:16px}
 .wb-main{display:flex;flex-direction:column;gap:16px;min-width:0}
 .wb-side{display:flex;flex-direction:column;gap:16px}
@@ -183,7 +207,7 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
   header{padding:var(--safe-top) 14px 0}
   header .meta{display:none}
   main{padding:18px 12px}
-  .modes,.two{grid-template-columns:1fr}
+  .two{grid-template-columns:1fr}
   .title h1{font-size:22px}
   .card{padding:15px}
   /* 边框/内边距收窄，把宽度尽可能留给画布 */
@@ -236,12 +260,22 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
         </div>
       </div>
 
+      <!-- 工作台三种方式的状态载体：与上方页面级 tab 同一套纯 CSS 机制 -->
+      <input type="radio" class="wb-radio" name="wbmode" id="wbm-auto" value="auto" checked>
+      <input type="radio" class="wb-radio" name="wbmode" id="wbm-manual" value="manual">
+      <input type="radio" class="wb-radio" name="wbmode" id="wbm-upload" value="upload">
+
       <div class="workbench">
         <div class="wb-main">
-          <article class="card">
+          <div class="wb-tabs">
+            <label class="wb-tab" for="wbm-auto">自动表达</label>
+            <label class="wb-tab" for="wbm-manual">手动创作</label>
+            <label class="wb-tab" for="wbm-upload">直接上传</label>
+          </div>
+
+          <article class="card wb-panel" id="panel-auto">
             <div class="card-head">
               <div>
-                <h2>自动表达</h2>
                 <p class="card-desc">版式固定：左上家庭名、右上日期天气、右侧祝福语、中上门牌号，均由系统精确排版；背景插画内容由 LLM 依据节日、日程、环境与偏好生成。</p>
               </div>
               <button class="btn primary" id="generate-auto" type="button">自动生成</button>
@@ -254,10 +288,9 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
             </details>
           </article>
 
-          <article class="card">
+          <article class="card wb-panel" id="panel-manual">
             <div class="card-head">
               <div>
-                <h2>手动创作</h2>
                 <p class="card-desc">只按你写的描述生成，不附加节日、日程与环境信息；提示词同样由 LLM 撰写。可另附一张参考图做图生图。</p>
               </div>
               <button class="btn primary" id="generate-manual" type="button">按描述生成</button>
@@ -281,6 +314,50 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
               <p class="hint">生成时由 LLM（<code>data/llm.json</code>）依据上方输入实时撰写；未配置 LLM 时回退内置模板。生成后此处显示实际使用的 Prompt。</p>
               <pre id="compiled-manual"></pre>
             </details>
+          </article>
+
+          <article class="card wb-panel" id="panel-upload">
+            <div class="card-head">
+              <div>
+                <p class="card-desc">不走生图接口，把你自己准备的图做成设备画面。只接受 <b>JPEG / PNG</b>，尺寸不限；
+                  选好后在取景框里拖动、缩放，确认时自动裁剪缩放到 <b id="upload-spec">800 × 480</b>，
+                  并转成墨水屏的黑 / 红 / 黄 / 白四色。</p>
+              </div>
+              <button class="btn primary" id="upload-pick" type="button">选择图片</button>
+            </div>
+            <div class="refbox" id="up-drop">
+              <input type="file" id="up-file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden>
+              <p class="hint" id="up-hint" style="margin:0"></p>
+
+              <!-- 取景：拖动平移 + 缩放，比例锁定为设备比例 -->
+              <div id="up-crop" hidden>
+                <div class="crop-stage" id="up-stage">
+                  <img id="up-img" alt="待裁剪的图片">
+                  <span class="crop-grid"></span>
+                </div>
+                <div class="crop-bar">
+                  <span class="crop-lab">缩放</span>
+                  <input type="range" id="up-zoom" min="1" max="4" step="0.01" value="1">
+                  <button class="btn sm" id="up-fit" type="button">重置取景</button>
+                </div>
+                <div class="crop-acts">
+                  <button class="btn primary" id="up-apply" type="button">确认裁剪</button>
+                  <button class="btn" id="up-cancel" type="button">取消</button>
+                </div>
+                <p class="hint" id="up-crop-hint"></p>
+              </div>
+
+              <!-- 处理结果 -->
+              <div class="refpreview" id="up-preview" hidden>
+                <img id="up-thumb" alt="处理后的设备图">
+                <div>
+                  <p class="hint" id="up-meta" style="margin:0 0 6px"></p>
+                  <button class="link" id="up-recropt" type="button">重新取景</button>
+                  <button class="link" id="up-clear" type="button">移除这张图</button>
+                </div>
+              </div>
+            </div>
+            </div>
           </article>
 
         </div>
@@ -450,8 +527,8 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
             <dt>headers</dt><dd>请求头</dd>
             <dt>body</dt><dd>JSON 请求体模板</dd>
             <dt>responseImagePath</dt><dd>返回图片 URL 的路径</dd>
-            <dt>{{size}}</dt><dd>自动替换为「模型出图尺寸」，如 3200x1920</dd>
-            <dt>{{width}} {{height}}</dt><dd>分别替换为宽 / 高数值</dd>
+            <dt>{{size}}</dt><dd>自动替换为「模型出图尺寸」，如 2770x1662；已按接口的像素区间自动校正，可直接发给接口</dd>
+            <dt>{{width}} {{height}}</dt><dd>分别替换为出图宽 / 高数值（与 {{size}} 同源，供用 width / height 字段的接口）</dd>
             <dt>{{image}}</dt><dd>手动创作上传的参考图（data URL，图生图用）；未写该占位符时会自动补到 image 字段</dd>
             <dt>useProxy</dt><dd>false = 浏览器直连（默认走本地代理）</dd>
           </dl>
@@ -473,7 +550,7 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
   const $$ = s => Array.prototype.slice.call(document.querySelectorAll(s));
   const PAL = { black: [32, 37, 31], red: [185, 60, 53], yellow: [213, 176, 35], white: [244, 240, 220] };
   const C = k => 'rgb(' + PAL[k].join(',') + ')';
-  const KEY = { form: 'homia.form', api: 'homia.api' };
+  const KEY = { form: 'homia.form', api: 'homia.api', wbTab: 'homia.wbtab' };
   const PLACEHOLDER = /your-api\.example\.com|YOUR_API_KEY/;
   const canvas = $('#screen');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -572,7 +649,7 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
   // 家庭名 / 日期天气 / 祝福语仍由前端在四角精确排版（内容绝对准确），插画需为它们留白。
   function buildPrompt(mode, brief) {
     const s = state();
-    const mult = /^[1-9]$/.test(s.renderSize) ? parseInt(s.renderSize, 10) : 1;
+    const outSize = resolveSize(s);   // 与请求体同源：按接口像素区间校正后的真实出图尺寸
     const b = brief || fallbackBrief(s, mode || s.mode);
     const out = [];
     out.push('这是 Homia 电子门牌（7.5 英寸四色墨水屏）的背景插画。画面里绝对不能出现任何文字、数字、字母、拼音或印章文字——一个字都不要画；'
@@ -594,7 +671,7 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
       + '画面整体必须明亮透气，不得出现大面积黑色或深色区域；不得出现蓝、青、绿、紫、粉、灰蓝或任何渐变。'
       + '不要照片写实、乡土院落、写实人脸、祭祀或供奉氛围。');
     if (s.refImage) out.push('画面要严格参考用户提供的参考图：保持它的主体、构图与风格基调，在此基础上按上面的要求重新绘制（不得出现任何文字）。');
-    out.push('目标尺寸 ' + (s.w * mult) + '×' + (s.h * mult) + ' px，最终显示在 ' + s.w + '×' + s.h + ' px 的 7.5 英寸墨水屏上。');
+    out.push('目标尺寸 ' + sizeText(outSize, '×') + ' px，最终显示在 ' + s.w + '×' + s.h + ' px 的 7.5 英寸墨水屏上。');
     if (s.avoid) out.push('避免：' + s.avoid + '。');
     return out.join('');
   }
@@ -670,11 +747,12 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
     }
   }
 
-  /* ---------------- 四色量化（Floyd–Steinberg）—— 当前保留但不再使用 ---------------- */
+  /* ---------------- 四色量化（Floyd–Steinberg） ----------------
+     墨水屏只能显示黑 / 红 / 黄 / 白四个值，任何彩色图都必须先量化到这套调色板。
+     quantizeCtx 作用于任意 2D 上下文（预览画布、离屏的裁剪画布都走它）。 */
   const LIST = [PAL.black, PAL.red, PAL.yellow, PAL.white];
-  function quantize() {
-    const w = canvas.width, h = canvas.height;
-    const img = ctx.getImageData(0, 0, w, h), d = img.data;
+  function quantizeCtx(c, w, h) {
+    const img = c.getImageData(0, 0, w, h), d = img.data;
     const at = (x, y) => (y * w + x) * 4;
     const nearest = (r, g, b) => {
       let best = 0, bd = Infinity;
@@ -699,8 +777,9 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
         spill(x, y + 1, 5 / 16); spill(x + 1, y + 1, 1 / 16);
       }
     }
-    ctx.putImageData(img, 0, 0);
+    c.putImageData(img, 0, 0);
   }
+  function quantize() { quantizeCtx(ctx, canvas.width, canvas.height); }
 
   /* ---------------- 内置插画引擎（离线可用） ---------------- */
   function seeded(str) {
@@ -1044,7 +1123,17 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
     const s = err.status;
     const api = err.apiMessage ? '：' + err.apiMessage : '';
     if (s === 400 && /pixels|size/i.test(err.apiMessage || '')) {
-      return '出图尺寸不被接口接受（400）' + api + '。到「显示规格 → 模型出图尺寸」调大倍率或选 2K。';
+      const m = /(at most|at least)\s+(\d+)/i.exec(err.apiMessage || '');
+      const tail = '（尺寸已按接口像素区间自动校正，通常不会触发这条；如仍出现，把接口给出的数值写进 data/api.json 的 sizeMax / sizeMin 即可）';
+      if (m && m[1].toLowerCase() === 'at most') {
+        return '出图尺寸超出接口上限（400）' + api + '。接口上限 ' + m[2] + ' 像素，请把 data/api.json 的 sizeMax 设为 '
+          + m[2] + '（默认 ' + SIZE_LIMIT.max + '），或调小 data/device.json 的 renderSize' + tail;
+      }
+      if (m) {
+        return '出图尺寸低于接口下限（400）' + api + '。接口下限 ' + m[2] + ' 像素，请把 data/device.json 的 renderSize 调大，'
+          + '或在 data/api.json 把 sizeMin 设为 ' + m[2] + tail;
+      }
+      return '出图尺寸不被接口接受（400）' + api + '。size 要写成「宽x高」（小写 x，如 2770x1662），并落在接口允许的像素区间内。';
     }
     if (s === 400) return '请求参数被接口拒绝（400）' + api + '。常见原因：size 格式（应为 800x480 这种小写 x）、model 名称、必填字段缺失。';
     if (s === 401 || s === 403) return '鉴权失败（' + s + '）' + api + '：检查 headers 里的密钥是否正确、账号是否有该模型权限。';
@@ -1055,18 +1144,71 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
     if (/未找到图片 URL/.test(err.message)) return '请求已成功，但按 responseImagePath 取不到图片地址。看上方响应体，把真实路径填进 responseImagePath。';
     return err.message;
   }
+  /* ---------------- 出图尺寸：按接口的像素区间求解 ----------------
+     接口在参数校验阶段就会拒绝越界尺寸（400，不消耗额度），所以「设备尺寸 × 倍率」不能直接发。
+     max：取自接口报错 "image area must be at most 4624220 pixels"（= 2048² × 1.1025，即该模型的 2K 档上限）。
+     min：实测 1024×1024（1,048,576 px）可被接受，取它作下限足够宽松。
+     换模型/换接口时不需要改代码：在 data/api.json 里写 sizeMax / sizeMin 覆盖即可。 */
+  const SIZE_LIMIT = { min: 1048576, max: 4624220 };
+  function sizeLimits() {
+    const a = (apiConfig() || {});
+    const num = (v, d) => { const n = parseInt(v, 10); return Number.isFinite(n) && n > 0 ? n : d; };
+    return { min: num(a.sizeMin, SIZE_LIMIT.min), max: num(a.sizeMax, SIZE_LIMIT.max) };
+  }
+  // 出图尺寸的展示形式：预定档位（2k/4k）返回大写，否则返回「宽 x 高」
+  function sizeText(size, sep) {
+    if (!size || !size.w) return String((size && size.preset) || '').toUpperCase();
+    return size.w + sep + size.h;
+  }
+  // 在保持宽高比不变的前提下，把尺寸收进 [min, max] 像素区间；同一比例下取最大的合规尺寸
+  function fitArea(w, h, lim) {
+    const area = w * h;
+    if (area >= lim.min && area <= lim.max) return { w: w, h: h };
+    const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+    const d = gcd(w, h) || 1;
+    const uw = w / d, uh = h / d;         // 最简比，如 800×480 → 5:3
+    const unit = uw * uh;
+    const down = area > lim.max;          // 超上限就等比缩小，低于下限就等比放大
+    const base = Math[down ? 'floor' : 'ceil'](Math.sqrt((down ? lim.max : lim.min) / unit));
+    const pick = (even) => {
+      for (let i = 0; i <= 8; i++) {
+        const r = down ? base - i : base + i;
+        if (r < 1) return null;
+        const cw = uw * r, ch = uh * r, a = cw * ch;
+        if (a < lim.min || a > lim.max) continue;
+        if (even && (cw % 2 || ch % 2)) continue;   // 优先边长取偶数，缩放 / 抖动时不会出现半像素
+        return { w: cw, h: ch };
+      }
+      return null;
+    };
+    return pick(true) || pick(false) || { w: w, h: h };   // 都无解时原样发出，交给接口报错
+  }
+  // 统一的出图尺寸来源：Prompt 里的目标尺寸与请求体的 size 必须同源，否则模型被要求画的比例与实发尺寸会打架
+  function resolveSize(s, noisy) {
+    const rs = String(s.renderSize || '1');
+    if (rs === '1k' || rs === '2k' || rs === '4k') return { preset: rs, w: 0, h: 0 };
+    const lim = sizeLimits();
+    const mult = /^[1-9]$/.test(rs) ? parseInt(rs, 10) : 1;
+    const want = { w: s.w * mult, h: s.h * mult };
+    const fit = fitArea(want.w, want.h, lim);
+    if (noisy && (fit.w !== want.w || fit.h !== want.h)) {
+      log('warn', '出图尺寸已按接口像素区间校正：' + want.w + '×' + want.h + '（' + px(want.w * want.h) + '）→ '
+        + fit.w + '×' + fit.h + '（' + px(fit.w * fit.h) + '），宽高比 ' + ratio(fit.w, fit.h) + ' 保持不变；'
+        + '区间 ' + px(lim.min) + ' ~ ' + px(lim.max) + ' 由接口决定（可在 data/api.json 用 sizeMin / sizeMax 覆盖）');
+    }
+    return { w: fit.w, h: fit.h, wanted: want };
+  }
+  function px(n) { return (n / 1_000_000).toFixed(2) + ' 百万像素'; }
+
   // 构造实际请求体：注入 prompt，并把尺寸类占位符换成显示规格
   function buildBody(cfg, prompt, noisy) {
     const s = state();
-    const mult = /^[1-9]$/.test(s.renderSize) ? parseInt(s.renderSize, 10) : 1;
-    const size = (s.renderSize === '2k' || s.renderSize === '4k')
-      ? s.renderSize
-      : (s.w * mult) + 'x' + (s.h * mult);
+    const outSize = resolveSize(s, noisy);
     // 先只替换尺寸占位符（纯数字，不会破坏 JSON），解析成对象
     const raw = JSON.stringify(cfg.body || {})
-      .replace(/\{\{width\}\}/g, String(s.w))
-      .replace(/\{\{height\}\}/g, String(s.h))
-      .replace(/\{\{size\}\}/g, String(size));
+      .replace(/\{\{width\}\}/g, String(outSize.w || s.w))
+      .replace(/\{\{height\}\}/g, String(outSize.h || s.h))
+      .replace(/\{\{size\}\}/g, sizeText(outSize, 'x'));
     let body;
     try { body = JSON.parse(raw); } catch (e) { throw new Error('接口 body 模板不是合法 JSON：' + e.message); }
     // prompt / 参考图作为「字符串值」递归写入，避免引号或换行把 JSON 撑坏
@@ -1133,6 +1275,7 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
 
   /* ---------------- 渲染 ---------------- */
   let current = { type: 'local', overlay: true };
+  let upInfo = null;   // 「直接上传」已生成的设备图：{ dataUrl, name, kind, sw, sh, w, h, bytes }
   function loadImage(src, cross) {
     return new Promise((resolve, reject) => {
       const im = new Image();
@@ -1287,12 +1430,19 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
     if (canvas.width !== s.w || canvas.height !== s.h) { canvas.width = s.w; canvas.height = s.h; }
     const dim = s.w + ' × ' + s.h;
     $('#dim').textContent = dim;
-    if ($('#dim2')) $('#dim2').textContent = dim;
+    // 把「实际请求的出图尺寸」一并显示：它是按接口像素区间校正后的值，可能不等于 设备尺寸 × 倍率
+    if ($('#dim2')) $('#dim2').textContent = dim + '（出图 ' + sizeText(resolveSize(s), ' × ') + '）';
+    // 上传卡里写死的规格说明跟着设备规格走，避免两处不一致
+    if ($('#upload-spec')) $('#upload-spec').textContent = dim;
+    if ($('#up-hint') && !upInfo && !crop) upHintDefault();
   }
   async function repaint() {
     applySize();
     if (current.type === 'api') {
       try { await paintImage(current.img); return; } catch (e) { /* 回落到本地 */ }
+    }
+    if (current.type === 'upload') {
+      try { await drawRemote(current.img.src, false); return; } catch (e) { /* 回落到本地 */ }
     }
     current = { type: 'local', overlay: true };
     drawScene(state().prompt); finish();
@@ -1432,20 +1582,307 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
     });
   })();
 
+  /* ---------------- 直接上传：格式校验 → 取景裁剪 → 四色化 ----------------
+     规则：只校验格式（JPEG / PNG，尺寸不限）；取景器按设备比例裁剪缩放成设备尺寸，
+     再经 Floyd–Steinberg 量化成黑 / 红 / 黄 / 白四色——预览与「下载 PNG」输出的都是这张四色图。 */
+  const UP_KIND = { 'image/jpeg': 'JPEG', 'image/jpg': 'JPEG', 'image/png': 'PNG' };
+  const UP_EXT = /\.(jpe?g|png)$/i;
+  let upSrc = null;     // 已确认图的原图，供「重新取景」使用
+  let upDraft = null;   // 正在取景的候选图（确认才转正，取消即丢弃）
+  let crop = null;      // 取景状态：{ img, base, s, tx, ty, zoom, max }
+  let upResizeTimer;
+
+  function upHintDefault() {
+    const s = state();
+    $('#up-hint').textContent = '把图片拖到此处，或点右上角「选择图片」。只接受 JPEG / PNG，尺寸不限——'
+      + '选好后在取景框里拖动、缩放，确认时自动裁成 ' + s.w + ' × ' + s.h + ' 并转成四色。';
+  }
+  function upBad() {   // 报错时给上传框一个红框提示
+    const box = $('#up-drop');
+    if (!box) return;
+    box.classList.add('bad');
+    setTimeout(() => box.classList.remove('bad'), 1200);
+  }
+  // 只做「格式 + 可解码」校验，尺寸交给取景器处理
+  function upRead(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) return reject(new Error('没有拿到文件'));
+      const type = String(file.type || '').toLowerCase();
+      let kind = UP_KIND[type];
+      // 个别环境下拖拽进来的文件拿不到 MIME，退回看扩展名
+      if (!kind && UP_EXT.test(file.name || '')) kind = /\.png$/i.test(file.name) ? 'PNG' : 'JPEG';
+      if (!kind) return reject(new Error('只接受 JPEG / PNG 格式的图片（当前：' + (type || file.name || '未知格式') + '）'));
+      const fr = new FileReader();
+      fr.onload = () => {
+        const dataUrl = String(fr.result);
+        const im = new Image();
+        im.onload = () => {
+          const w = im.naturalWidth || im.width, h = im.naturalHeight || im.height;
+          if (!w || !h) return reject(new Error('图片尺寸异常，无法读取'));
+          resolve({ dataUrl: dataUrl, name: file.name || '上传的图片', kind: kind, w: w, h: h, bytes: file.size || 0 });
+        };
+        im.onerror = () => reject(new Error('图片无法解码，文件可能已损坏'));
+        im.src = dataUrl;
+      };
+      fr.onerror = () => reject(new Error('图片读取失败'));
+      fr.readAsDataURL(file);
+    });
+  }
+
+  /* ---- 取景器几何：取景框尺寸、基准缩放、边界约束、缩放锚点 ---- */
+  function cropStageSize() {
+    const st = $('#up-stage');
+    return { w: st.clientWidth, h: st.clientHeight };
+  }
+  function imgReady(im) {
+    if (im.complete && im.naturalWidth) return Promise.resolve();
+    return new Promise((res, rej) => {
+      im.addEventListener('load', () => res(), { once: true });
+      im.addEventListener('error', () => rej(new Error('图片无法解码')), { once: true });
+    });
+  }
+  // 平移必须始终被取景框盖满，不允许露底
+  function cropClamp() {
+    const v = cropStageSize(), im = crop.img;
+    const dw = im.naturalWidth * crop.s, dh = im.naturalHeight * crop.s;
+    crop.tx = Math.min(0, Math.max(v.w - dw, crop.tx));
+    crop.ty = Math.min(0, Math.max(v.h - dh, crop.ty));
+  }
+  function cropApply() {
+    const im = crop.img;
+    im.style.width = im.naturalWidth + 'px';
+    im.style.height = im.naturalHeight + 'px';
+    im.style.transform = 'translate(' + crop.tx + 'px,' + crop.ty + 'px) scale(' + crop.s + ')';
+  }
+  // 回到「铺满取景框」的初始取景，并重新按当前设备比例锁定取景框
+  function cropReset() {
+    const im = $('#up-img'), st = $('#up-stage'), s = state();
+    if (!im.naturalWidth) return;
+    st.style.aspectRatio = s.w + ' / ' + s.h;
+    const v = cropStageSize();
+    const base = Math.max(v.w / im.naturalWidth, v.h / im.naturalHeight);
+    crop = { img: im, base: base, s: base, tx: 0, ty: 0, zoom: 1,
+             max: Math.max(4, Math.min(12, 1 / base)) };
+    crop.tx = (v.w - im.naturalWidth * base) / 2;
+    crop.ty = (v.h - im.naturalHeight * base) / 2;
+    cropClamp(); cropApply();
+    $('#up-zoom').min = '1';
+    $('#up-zoom').max = String(crop.max);
+    $('#up-zoom').value = '1';
+    $('#up-crop-hint').textContent = '原图 ' + (upDraft ? upDraft.w + ' × ' + upDraft.h : '')
+      + '；拖动可移动取景，滚轮 / 滑块可缩放（1 – ' + crop.max.toFixed(2) + ' 倍）。'
+      + '取景框比例固定为 ' + s.w + ' : ' + s.h + '，确认后输出 ' + s.w + ' × ' + s.h + ' 四色图。';
+  }
+  // 以取景框内的 (ax, ay) 为锚点缩放；不传锚点则取框中心
+  function cropZoomTo(zoom, ax, ay) {
+    if (!crop) return;
+    const v = cropStageSize();
+    zoom = Math.min(crop.max, Math.max(1, zoom));
+    if (ax == null) { ax = v.w / 2; ay = v.h / 2; }
+    const s0 = crop.s, s1 = crop.base * zoom;
+    const ux = (ax - crop.tx) / s0, uy = (ay - crop.ty) / s0;   // 锚点在源图上的位置
+    crop.zoom = zoom; crop.s = s1;
+    crop.tx = ax - ux * s1; crop.ty = ay - uy * s1;
+    cropClamp(); cropApply();
+    $('#up-zoom').value = String(zoom);
+  }
+
+  async function cropOpen(src) {
+    upDraft = src;
+    const wrap = $('#up-crop'), im = $('#up-img');
+    $('#up-hint').hidden = true;
+    $('#up-preview').hidden = true;
+    wrap.hidden = false;                 // 先显示，否则取景框量不到宽高
+    im.removeAttribute('style');
+    im.src = src.dataUrl;
+    try {
+      await imgReady(im);
+    } catch (e) {
+      wrap.hidden = true;
+      upDraft = null;
+      upSet(upInfo);                     // 回到「已有图」或「空」的状态
+      status('图片无法解码：' + e.message, 'err');
+      return;
+    }
+    cropReset();
+  }
+  function cropClose() {
+    crop = null; upDraft = null;
+    $('#up-crop').hidden = true;
+    $('#up-img').removeAttribute('src');
+    upSet(upInfo);
+    status(upInfo ? '已取消这次取景，保留原来的图。' : '已取消取景。', 'ok');
+  }
+  // 确认裁剪：按取景框把可见区域画进设备尺寸的画布，再量化成四色
+  async function upApply() {
+    if (!crop || !upDraft) return;
+    const btn = $('#up-apply'), label = btn.textContent;
+    btn.disabled = true; btn.textContent = '处理中…';
+    // 量化 + 编码是同步的，先让出一帧，否则「处理中…」根本来不及渲染
+    await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    try {
+      const s = state(), v = cropStageSize(), im = crop.img;
+      const sx = -crop.tx / crop.s, sy = -crop.ty / crop.s;   // 可见区域换算回源图像素
+      const sw = v.w / crop.s, sh = v.h / crop.s;
+      const out = document.createElement('canvas');
+      out.width = s.w; out.height = s.h;
+      const octx = out.getContext('2d', { willReadFrequently: true });
+      octx.fillStyle = C('white');                            // PNG 的透明区域按白纸处理
+      octx.fillRect(0, 0, s.w, s.h);
+      octx.imageSmoothingEnabled = true;
+      octx.imageSmoothingQuality = 'high';
+      octx.drawImage(im, sx, sy, sw, sh, 0, 0, s.w, s.h);
+      quantizeCtx(octx, s.w, s.h);                            // 量化在设备尺寸上做，抖动网屏才均匀
+      const src = upDraft;
+      upInfo = {
+        dataUrl: out.toDataURL('image/png'), name: src.name, kind: src.kind,
+        sw: src.w, sh: src.h, w: s.w, h: s.h, bytes: src.bytes
+      };
+      upSrc = src;
+      crop = null; upDraft = null;
+      $('#up-crop').hidden = true;
+      $('#up-img').removeAttribute('src');
+      upSet(upInfo);
+      await upPaint();
+      log('ok', '已裁剪并四色化：' + upSrc.w + '×' + upSrc.h + ' → ' + s.w + '×' + s.h);
+      toast('已裁剪为 ' + s.w + ' × ' + s.h + ' 四色图');
+    } catch (err) {
+      log('err', '裁剪失败：' + err.message);
+      status('裁剪失败：' + err.message, 'err');
+      toast('裁剪失败');
+    } finally {
+      btn.disabled = false; btn.textContent = label;
+    }
+  }
+
+  function upSet(info) {
+    upInfo = info || null;
+    const box = $('#up-preview'), thumb = $('#up-thumb'), meta = $('#up-meta');
+    if (upInfo) {
+      thumb.src = upInfo.dataUrl;
+      meta.textContent = upInfo.name + ' · ' + upInfo.kind + ' · 原图 ' + upInfo.sw + ' × ' + upInfo.sh
+        + ' → 输出 ' + upInfo.w + ' × ' + upInfo.h + ' 四色 · ' + Math.max(1, Math.round(upInfo.bytes / 1024)) + ' KB';
+      box.hidden = false;
+      $('#up-hint').hidden = true;
+    } else {
+      thumb.removeAttribute('src');
+      meta.textContent = '';
+      box.hidden = true;
+      if ($('#up-crop').hidden) { $('#up-hint').hidden = false; upHintDefault(); }
+    }
+  }
+  // 把已生成的四色图放进预览区（图本身就是四色，重绘不需要再量化）
+  async function upPaint() {
+    if (!upInfo) return;
+    current = { type: 'upload', img: { src: upInfo.dataUrl, cross: false } };
+    try {
+      await drawRemote(upInfo.dataUrl, false);
+      $('#preview-tag').textContent = '直接上传 · 四色';
+      status('预览区显示的是裁剪并量化后的 ' + upInfo.w + ' × ' + upInfo.h + ' 四色图（黑 / 红 / 黄 / 白），'
+        + '与墨水屏实际显示一致；「下载 PNG」导出的就是同一张图。', 'ok');
+    } catch (err) {
+      status('图片显示失败：' + err.message, 'err');
+    }
+  }
+  async function upAccept(file) {
+    try {
+      const info = await upRead(file);
+      log('ok', '已读取待裁剪图片：' + info.name + ' · ' + info.kind + ' · ' + info.w + '×' + info.h);
+      await cropOpen(info);
+      toast('已载入，拖动 / 缩放取景后点「确认裁剪」');
+    } catch (err) {
+      upBad();
+      log('err', '上传被拒绝：' + err.message);
+      status('上传失败：' + err.message, 'err');
+      toast(err.message);
+    }
+  }
+  (function bindUpload() {
+    $('#upload-pick').onclick = () => $('#up-file').click();
+    $('#up-file').onchange = (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (f) upAccept(f);
+      e.target.value = '';
+    };
+    $('#up-clear').onclick = () => {
+      const shown = current.type === 'upload';
+      upSrc = null; upDraft = null; crop = null;
+      $('#up-crop').hidden = true;
+      $('#up-img').removeAttribute('src');
+      upSet(null);
+      log('info', '已移除上传的图片');
+      if (shown) {   // 预览正显示这张图时回到本地插画，避免画面来源与实际不符
+        current = { type: 'local', overlay: true };
+        drawScene(state().prompt); finish();
+        $('#preview-tag').textContent = '本地插画 · 四色';
+        status('已移除上传的图片，预览已回到本地插画。', 'ok');
+      } else {
+        status('已移除上传的图片。', 'ok');
+      }
+      toast('已移除上传的图片');
+    };
+    $('#up-recropt').onclick = () => { if (upSrc) cropOpen(upSrc); };
+
+    // 取景：拖动平移
+    const st = $('#up-stage');
+    let drag = null;
+    st.addEventListener('pointerdown', e => {
+      if (!crop) return;
+      drag = { x: e.clientX, y: e.clientY, tx: crop.tx, ty: crop.ty };
+      st.classList.add('dragging');
+      try { st.setPointerCapture(e.pointerId); } catch (_) {}
+      e.preventDefault();
+    });
+    st.addEventListener('pointermove', e => {
+      if (!drag || !crop) return;
+      crop.tx = drag.tx + (e.clientX - drag.x);
+      crop.ty = drag.ty + (e.clientY - drag.y);
+      cropClamp(); cropApply();
+    });
+    const endDrag = e => {
+      if (!drag) return;
+      drag = null; st.classList.remove('dragging');
+      try { if (st.hasPointerCapture && st.hasPointerCapture(e.pointerId)) st.releasePointerCapture(e.pointerId); } catch (_) {}
+    };
+    st.addEventListener('pointerup', endDrag);
+    st.addEventListener('pointercancel', endDrag);
+    // 取景：滚轮以指针位置为锚点缩放（必须 passive:false 才能拦住页面滚动）
+    st.addEventListener('wheel', e => {
+      if (!crop) return;
+      e.preventDefault();
+      const r = st.getBoundingClientRect();
+      cropZoomTo(crop.zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12), e.clientX - r.left, e.clientY - r.top);
+    }, { passive: false });
+    // 取景：滑块缩放；拦掉冒泡，避免触发全局的 persist / refresh
+    $('#up-zoom').addEventListener('input', e => {
+      e.stopPropagation();
+      if (!crop) return;
+      cropZoomTo(parseFloat(e.target.value), null, null);
+    });
+    $('#up-fit').onclick = () => { if (crop) cropReset(); };
+    $('#up-apply').onclick = () => upApply();
+    $('#up-cancel').onclick = () => cropClose();
+    // 取景框宽度随布局变化，取景偏移会失效 → 重新贴合（不保留取景位置）
+    window.addEventListener('resize', () => {
+      if (!crop) return;
+      clearTimeout(upResizeTimer);
+      upResizeTimer = setTimeout(() => { if (crop) cropReset(); }, 160);
+    });
+
+    const drop = $('#up-drop');
+    ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+    drop.addEventListener('drop', e => {
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) upAccept(f);
+    });
+  })();
+  upHintDefault();
+
   /* ---------------- API 配置 ---------------- */
   function refresh() {
     const s = state();
     renderChips();
-    const rs = $('#render-size');
-    if (rs) {
-      [1, 2, 3, 4].forEach(m => {
-        const opt = rs.querySelector('option[value="' + m + '"]');
-        if (opt) {
-          opt.textContent = m + ' 倍 · ' + (s.w * m) + ' × ' + (s.h * m)
-            + '（' + ((s.w * m * s.h * m) / 1_000_000).toFixed(2) + ' 百万像素）';
-        }
-      });
-    }
     renderContext();
     $('#compiled-auto').textContent = buildPrompt('auto');
     $('#compiled-manual').textContent = buildPrompt('manual');
@@ -1619,6 +2056,27 @@ pre{white-space:pre-wrap;word-break:break-word;font:11.5px/1.7 ui-monospace,Cons
       toast('天气获取失败');
     }
   };
+
+  /* ---------------- 工作台：三种方式的标签页 ---------------- */
+  // 显隐完全由 CSS（#wbm-*:checked）驱动，这里只做两件事：同步生成模式 + 记住上次选择
+  const WB_TABS = ['auto', 'manual', 'upload'];
+  const wbSyncMode = name => {
+    if (name === 'upload') return; // 上传不走生成模式，保持上一次的 auto / manual
+    const m = $('#mode-' + name);
+    if (m) m.checked = true;
+  };
+  $$('input[name=wbmode]').forEach(r => r.addEventListener('change', () => {
+    wbSyncMode(r.value);
+    save(KEY.wbTab, r.value);
+    // 切回生成类标签时刷新一次上下文，让「查看完整 Prompt」与当前输入一致
+    if (r.value !== 'upload') refresh();
+  }));
+  // 恢复上次选择；无有效记录时保持 HTML 默认的「自动表达」
+  const lastWbTab = load(KEY.wbTab, '');
+  if (WB_TABS.indexOf(lastWbTab) >= 0) {
+    $('#wbm-' + lastWbTab).checked = true;
+    wbSyncMode(lastWbTab);
+  }
 
   /* ---------------- 事件绑定 ---------------- */
   const REPAINT_KEYS = ['width', 'height', 'door-title', 'door-number', 'door-show'];

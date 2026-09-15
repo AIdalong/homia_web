@@ -137,6 +137,9 @@ const server = http.createServer(async (req, res) => {
       method: api.method,
       body: api.body,
       responseImagePath: api.responseImagePath,
+      // 出图尺寸的像素区间：接口用来拒绝越界 size（400）。这两个值不含密钥，直接下发让前端自动校正尺寸
+      sizeMin: api.sizeMin,
+      sizeMax: api.sizeMax,
       configured: !/your-api\.example\.com|YOUR_API_KEY/.test(api.endpoint + JSON.stringify(api.headers || {}))
     };
     // key 绝不下发到浏览器；只暴露非敏感字段（host 等是公开域名，无泄露风险）
